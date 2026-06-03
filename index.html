@@ -32,9 +32,14 @@
     padding:14px 14px 16px;z-index:10;
     max-height:calc(100vh - 28px);overflow:auto;
   }
+  #ui .titlebar{display:flex;align-items:flex-start;justify-content:space-between;gap:8px}
   #ui h1{
     font:700 1.05rem/1.2 Georgia,serif;margin:0 0 2px;color:#fff;
     display:flex;align-items:center;gap:.4rem;
+  }
+  .icon-btn{
+    flex:0 0 auto;width:30px;height:30px;padding:0;border-radius:8px;
+    font-size:1.1rem;line-height:1;display:grid;place-items:center;
   }
   #ui .sub{font-size:.72rem;color:#cbb79a;margin:0 0 12px}
   .group{margin:0 0 14px}
@@ -86,8 +91,34 @@
     position:fixed;inset:0;display:grid;place-items:center;z-index:20;
     background:#0e0c09;color:#cbb79a;font:600 1rem Georgia,serif;
   }
-  @media (max-width:560px){
-    #ui{width:calc(100vw - 28px)}
+
+  /* ---------- Collapsible panel (mobile-friendly) ---------- */
+  #fab{
+    position:fixed;top:14px;left:14px;z-index:12;display:none;
+    align-items:center;gap:7px;cursor:pointer;
+    background:var(--panel-bg);border:1px solid var(--panel-line);
+    color:var(--cream);border-radius:10px;padding:10px 13px;
+    font:600 .85rem inherit;backdrop-filter:blur(6px);
+    box-shadow:0 6px 20px rgba(0,0,0,.4);
+  }
+  #fab:hover{border-color:var(--honey)}
+  body.ui-collapsed #ui{display:none}
+  body.ui-collapsed #fab{display:flex}
+
+  /* compact selection pill, only while collapsed */
+  #mini{
+    position:fixed;left:50%;transform:translateX(-50%);bottom:14px;z-index:11;
+    display:none;max-width:calc(100vw - 28px);
+    background:var(--panel-bg);border:1px solid var(--panel-line);
+    border-radius:999px;padding:8px 15px;backdrop-filter:blur(6px);
+    font-size:.8rem;color:#e7d6b6;text-align:center;
+    box-shadow:0 6px 20px rgba(0,0,0,.4);
+  }
+  #mini b{color:#fff;font-weight:600}
+  body.ui-collapsed #mini{display:block}
+
+  @media (max-width:640px){
+    #ui{width:calc(100vw - 28px);max-height:calc(100dvh - 28px)}
     #hint{display:none}
   }
 </style>
@@ -97,8 +128,14 @@
 
 <div id="loading">Loading 3D model…</div>
 
+<button id="fab" title="Show controls">⚙️ <span>Controls</span></button>
+<div id="mini">Tap <b>⚙️ Controls</b> to open the menu</div>
+
 <div id="ui">
-  <h1>🪑 2×4 Garden Bench</h1>
+  <div class="titlebar">
+    <h1>🪑 2×4 Garden Bench</h1>
+    <button id="collapse" class="icon-btn" title="Hide panel" aria-label="Hide panel">✕</button>
+  </div>
   <p class="sub">Interactive build model · 48″ × 36½″ × 30½″ · actual lumber sizes</p>
 
   <div class="group">
@@ -453,10 +490,12 @@ function updateReadout(){
   const nameEl = document.getElementById('ro-name');
   const dimEl  = document.getElementById('ro-dim');
   const hintEl = document.getElementById('ro-hint');
+  const miniEl = document.getElementById('mini');
   if(selected === 'all'){
     nameEl.textContent = 'Whole assembly';
     dimEl.textContent  = parts.length + ' boards · ' + W + '″ × ' + H + '″ × ' + D + '″';
     hintEl.textContent = 'Click a board to inspect it.';
+    miniEl.innerHTML = 'Tap <b>⚙️ Controls</b> · tap a board to inspect it';
   } else {
     const m = parts.find(p=>p.userData.partName === selected);
     nameEl.textContent = m.userData.label;
@@ -464,6 +503,7 @@ function updateReadout(){
     hintEl.textContent = mode === 'individual'
       ? 'Isolated. Choose “Show all parts” to reset.'
       : 'Highlighted in the assembly.';
+    miniEl.innerHTML = '<b>' + m.userData.label + '</b> · ' + m.userData.dim;
   }
 }
 
@@ -475,6 +515,13 @@ const slider = document.getElementById('explode');
 const pct = document.getElementById('explode-pct');
 const partsel = document.getElementById('partsel');
 const boltchk = document.getElementById('boltchk');
+const fab = document.getElementById('fab');
+const collapseBtn = document.getElementById('collapse');
+
+// ---- Collapsible panel (keeps the bench visible on small screens) ----
+function setCollapsed(c){ document.body.classList.toggle('ui-collapsed', c); }
+collapseBtn.onclick = ()=> setCollapsed(true);
+fab.onclick = ()=> setCollapsed(false);
 
 // populate dropdown
 {
@@ -564,10 +611,27 @@ renderer.domElement.addEventListener('pointerup', e=>{
 /* =====================================================================
    RENDER LOOP
    ===================================================================== */
+// Distance that frames the whole bench for the current aspect ratio
+// (portrait phones need the camera further back so the 48″ width fits).
+function framingDistance(){
+  const a = innerWidth/innerHeight;
+  if(a >= 1.2) return 105;
+  if(a >= 0.85) return 130;
+  if(a >= 0.6)  return 165;
+  return 200;
+}
+function frameCamera(){
+  const dir = camera.position.clone().sub(controls.target);
+  if(dir.lengthSq() < 1e-6) dir.set(60,42,72);
+  dir.normalize().multiplyScalar(framingDistance());
+  camera.position.copy(controls.target).add(dir);
+  camera.updateProjectionMatrix();
+}
+
 addEventListener('resize', ()=>{
   camera.aspect = innerWidth/innerHeight;
-  camera.updateProjectionMatrix();
   renderer.setSize(innerWidth, innerHeight);
+  frameCamera();
 });
 
 function tick(){
@@ -580,6 +644,8 @@ function tick(){
 applyExplode();
 updateAppearance();
 updateReadout();
+setCollapsed(innerWidth <= 640);   // start with panel out of the way on phones
+frameCamera();                     // fit the whole bench for the current screen
 document.getElementById('loading').remove();
 tick();
 </script>
