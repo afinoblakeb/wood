@@ -194,19 +194,24 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 /* =====================================================================
    PARAMETRIC DIMENSIONS  (all values in INCHES; 1 unit = 1 inch)
 
-   Structure: two symmetrical A-FRAME side assemblies (left & right),
-   each = front leg + angled back/backrest post + flat armrest + middle
-   seat rail + bottom rail.  The two sides are joined left-to-right by
-   seat slats, back slats, and TWO bottom cross beams (front + a set-back
-   rear beam that catches the reclined back posts).
+   Structure — two SYMMETRIC A-FRAME sides (these are the LEGS):
+     • front leg + back leg are mirror images; they splay from the floor
+       and lean inward to meet near the top, where a flat ARMREST caps them.
+     • a SEAT RAIL and a BOTTOM RAIL are the crossbars of the "A".
+   The BACKREST is a SEPARATE reclined post that bolts to the back leg and
+   rises to full height — it is NOT a leg and carries no seat load.
+   The two A-frames are joined left-to-right by seat slats, back slats, and
+   two bottom cross beams (front + rear).
    ===================================================================== */
 const W = 48;          // overall width  (left-right, X)
-const H = 36.5;        // overall height (Y) — top of back posts
-const D = 30.5;        // overall depth  (front-back, Z) — approx bounding target
+const H = 36.5;        // overall height (Y) — top of backrest
+const D = 30.5;        // overall depth  (front-back, Z) — approx target
 const SEAT_TOP = 17;   // top of seat slats
 const ARM_TOP  = 25;   // top of armrests
-const BACK_ANGLE_DEG  = 20;   // backrest lean off vertical (≈115° seat-to-back)
-const FRONT_SPLAY_DEG = 8;    // front leg splay (foot kicks forward)
+const LEG_SPLAY_DEG    = 12;  // each leg's lean from vertical (SYMMETRIC A)
+const BACK_RECLINE_DEG = 15;  // separate backrest recline off vertical (≈105° seat-to-back)
+const FOOT_HALF = 11;         // half the base spread: front foot +11, back foot −11 (22″ base)
+const BOT_RAIL_CY = 7.5;      // bottom rail centre ≈ 6″ off the floor
 const SEAT_SLAT_COUNT = 5;
 const BACK_SLAT_COUNT = 4;
 
@@ -221,34 +226,42 @@ const W4 = LUMBER['2x4'].b;   // 3.5  (2x4 width)
 
 // Derived geometry helpers ------------------------------------------------
 const rad = THREE.MathUtils.degToRad;
-const BACK = rad(BACK_ANGLE_DEG);
-const SPL  = rad(FRONT_SPLAY_DEG);
-const TAN_B = Math.tan(BACK), TAN_F = Math.tan(SPL);
+const SPL = rad(LEG_SPLAY_DEG);
+const RCL = rad(BACK_RECLINE_DEG);
+const TAN_S = Math.tan(SPL);
 
 const LEG_X    = W/2 - TH/2;    // 23.25  centre X of legs (1.5 thick → outer face ±24)
 const INNER_X  = W/2 - TH;      // 22.5   inner face of legs
 const RAIL_X   = INNER_X - TH/2;// 21.75  centre X of side-frame rails (inboard of legs)
 const BEAM_LEN = 2*INNER_X;     // 45     cross-beam length between leg inner faces
 
-const FRONT_FOOT_Z = 10;        // centre Z of front foot (at floor)
-const BACK_FOOT_Z  = -4.5;      // centre Z of back foot (at floor)
-const ARM_CY  = ARM_TOP - TH/2;       // centre Y of flat armrest
-const FRONT_LEG_TOP_Y = ARM_TOP - TH; // front leg ends under the armrest
-const SEAT_RAIL_CY = SEAT_TOP - TH - W4/2; // seat rail (2x4 on edge), top = slat bottom
-const BOT_CY = 3;                     // centre Y of bottom rails / beams
+const LEG_TOP_Y    = ARM_TOP - TH;         // 23.5  legs end here (capped by armrest)
+const ARM_CY       = ARM_TOP - TH/2;       // 24.25 flat armrest centre Y
+const SEAT_RAIL_CY = SEAT_TOP - TH - W4/2; // 13.75 seat rail (on edge), top = slat bottom
 
-// Centre-Z of each angled member at a given height y
-const frontLegZ = (y) => FRONT_FOOT_Z - y*TAN_F;   // foot forward, leans back going up
-const backPostZ = (y) => BACK_FOOT_Z  - y*TAN_B;   // foot rear,    leans back going up
+// Symmetric A legs: feet at ±FOOT_HALF, each leans inward toward the top
+const frontLegZ = (y) =>  FOOT_HALF - y*TAN_S;   // front foot forward (+z), leans back
+const backLegZ  = (y) => -FOOT_HALF + y*TAN_S;   // back foot rear (−z), leans forward (mirror)
 
-// Build a board that runs between two points in the Z-Y plane (for the
-// angled legs/posts). xThick = thickness across X, profW = width seen in
-// the side profile. Returns {size,pos,rotX}.
+// Build a board that runs between two points in the Z-Y plane (angled
+// legs/posts). xThick = thickness across X, profW = width seen in profile.
 function strut(x, z0,y0, z1,y1, xThick, profW){
   const dz = z1-z0, dy = y1-y0;
-  const L  = Math.hypot(dz,dy);
-  return { size:[xThick, L, profW], pos:[x, (y0+y1)/2, (z0+z1)/2], rotX: Math.atan2(dz,dy) };
+  return { size:[xThick, Math.hypot(dz,dy), profW],
+           pos:[x, (y0+y1)/2, (z0+z1)/2], rotX: Math.atan2(dz,dy) };
 }
+
+// Separate reclined backrest: lower end bolts behind the back leg just
+// below the seat, then reclines back to full height.
+const backrest = (()=>{
+  const y0 = 14;
+  const z0 = backLegZ(y0) - (W4/2)*Math.cos(SPL) - TH/2;  // tucked behind the back leg
+  const y1 = H;
+  const z1 = z0 - (y1 - y0)*Math.tan(RCL);
+  return { y0, z0, y1, z1, len: Math.hypot(z1-z0, y1-y0) };
+})();
+const backrestZ = (y) => backrest.z0 + (y - backrest.y0) *
+  ((backrest.z1 - backrest.z0)/(backrest.y1 - backrest.y0));
 
 /* =====================================================================
    PART DEFINITIONS
@@ -259,45 +272,41 @@ const partDefs = [];
 const add = (name,label,lumber,dim,size,pos,rotX=0)=>
   partDefs.push({name,label,lumber,dim,size,pos,rotX});
 
-// Endpoints of the two angled legs (shared by both sides)
-const FL = { z0:FRONT_FOOT_Z, y0:0, z1:frontLegZ(FRONT_LEG_TOP_Y), y1:FRONT_LEG_TOP_Y };
-const BP = { z0:BACK_FOOT_Z,  y0:0, z1:backPostZ(H),               y1:H };
-const flLen = Math.hypot(FL.z1-FL.z0, FL.y1-FL.y0);
-const bpLen = Math.hypot(BP.z1-BP.z0, BP.y1-BP.y0);
+const legLen = Math.hypot(frontLegZ(LEG_TOP_Y)-FOOT_HALF, LEG_TOP_Y);
 
+// ---- Symmetric A legs + separate backrest (per side) ----
 for(const [side,sx] of [['left',-LEG_X],['right',LEG_X]]){
-  // Front leg (2x4 on edge in the side plane)
-  let s = strut(sx, FL.z0,FL.y0, FL.z1,FL.y1, TH, W4);
-  add('leg-front-'+side,'Front leg ('+side+')','2x4','2×4 · '+flLen.toFixed(1)+'″',
+  let s = strut(sx, FOOT_HALF,0, frontLegZ(LEG_TOP_Y),LEG_TOP_Y, TH,W4);
+  add('leg-front-'+side,'Front leg ('+side+')','2x4','2×4 · '+legLen.toFixed(1)+'″',
       s.size, s.pos, s.rotX);
-  // Back / backrest post (longer, leans back to form the backrest)
-  s = strut(sx, BP.z0,BP.y0, BP.z1,BP.y1, TH, W4);
-  add('post-back-'+side,'Back post / backrest ('+side+')','2x4','2×4 · '+bpLen.toFixed(1)+'″(angled '+BACK_ANGLE_DEG+'°)',
+  s = strut(sx, -FOOT_HALF,0, backLegZ(LEG_TOP_Y),LEG_TOP_Y, TH,W4);
+  add('leg-back-'+side,'Back leg ('+side+')','2x4','2×4 · '+legLen.toFixed(1)+'″',
+      s.size, s.pos, s.rotX);
+  s = strut(sx, backrest.z0,backrest.y0, backrest.z1,backrest.y1, TH,W4);
+  add('backrest-'+side,'Backrest post ('+side+')','2x4','2×4 · '+backrest.len.toFixed(1)+'″(reclined '+BACK_RECLINE_DEG+'°)',
       s.size, s.pos, s.rotX);
 }
 
-// ---- Per-side rails (armrest, seat rail, bottom rail) ----
-const RAIL_INX = RAIL_X;       // rails sit inboard, screwed to the leg inner faces
-for(const [side,sx] of [['left',-RAIL_INX],['right',RAIL_INX]]){
-  const armSx = (sx<0?-LEG_X:LEG_X);   // armrest sits on TOP of the leg (full leg X)
-  // Flat armrest: front overhang → back post; laid flat (1.5 thick)
-  const armFront = frontLegZ(ARM_CY) + W4/2 + 2;       // 2″ front overhang
-  const armBack  = backPostZ(ARM_CY) + (W4/2)/Math.cos(BACK);
+// ---- Per-side rails: flat armrest, seat rail, bottom rail ----
+for(const [side,sx,rx] of [['left',-LEG_X,-RAIL_X],['right',LEG_X,RAIL_X]]){
+  // Flat armrest: caps the A from the front leg, over the back leg, to the backrest
+  const armFront = frontLegZ(ARM_CY) + W4/2 + 2;   // 2″ front overhang
+  const armBack  = backrestZ(ARM_CY) + TH/2;        // butts into the backrest
   add('armrest-'+side,'Armrest ('+side+')','2x4','2×4 · '+(armFront-armBack).toFixed(1)+'″(flat)',
-      [W4, TH, armFront-armBack], [armSx, ARM_CY, (armFront+armBack)/2]);
-  // Middle seat rail (2x4 on edge) — seat slats land on top of this
-  const srFront = 9, srBack = -8;
-  add('seatrail-'+side,'Seat rail ('+side+')','2x4','2×4 · '+(srFront-srBack).toFixed(1)+'″',
-      [TH, W4, srFront-srBack], [sx, SEAT_RAIL_CY, (srFront+srBack)/2]);
-  // Bottom rail (2x4 on edge) near the floor, front foot → back foot
-  const brF = frontLegZ(BOT_CY), brB = backPostZ(BOT_CY);
+      [W4, TH, armFront-armBack], [sx, ARM_CY, (armFront+armBack)/2]);
+  // Seat rail (2x4 on edge) — seat slats land on top of this
+  const srF = frontLegZ(SEAT_RAIL_CY), srB = backLegZ(SEAT_RAIL_CY);
+  add('seatrail-'+side,'Seat rail ('+side+')','2x4','2×4 · '+(srF-srB).toFixed(1)+'″',
+      [TH, W4, srF-srB], [rx, SEAT_RAIL_CY, (srF+srB)/2]);
+  // Bottom rail (2x4 on edge) ≈6″ off the floor
+  const brF = frontLegZ(BOT_RAIL_CY), brB = backLegZ(BOT_RAIL_CY);
   add('bottomrail-'+side,'Bottom rail ('+side+')','2x4','2×4 · '+(brF-brB).toFixed(1)+'″',
-      [TH, W4, brF-brB], [sx, BOT_CY, (brF+brB)/2]);
+      [TH, W4, brF-brB], [rx, BOT_RAIL_CY, (brF+brB)/2]);
 }
 
 // ---- Seat slats (2x4 flat, left-to-right, on top of the seat rails) ----
 {
-  const frontC = 8.5, rearC = -8;                 // span of slat centres
+  const frontC = 7.5, rearC = -7.5;
   const step = (frontC - rearC)/(SEAT_SLAT_COUNT-1);
   for(let i=0;i<SEAT_SLAT_COUNT;i++){
     add('seat-slat-'+(i+1),'Seat slat '+(i+1),'2x4','2×4 · 48″',
@@ -305,26 +314,27 @@ for(const [side,sx] of [['left',-RAIL_INX],['right',RAIL_INX]]){
   }
 }
 
-// ---- Back slats (2x4, left-to-right, on the front face of the back posts) ----
+// ---- Back slats (2x4, left-to-right, on the seat-side face of the backrest) ----
 {
-  const sLo = 19, sHi = bpLen - 1.6;              // along the post axis
+  const dirY = (backrest.y1-backrest.y0)/backrest.len;
+  const dirZ = (backrest.z1-backrest.z0)/backrest.len;
+  const nY = Math.sin(RCL), nZ = Math.cos(RCL), off = W4/2 + TH/2; // proud of front face
+  const sLo = 5, sHi = backrest.len - 2;
   const step = (sHi - sLo)/(BACK_SLAT_COUNT-1);
-  const off  = W4/2 + TH/2;                       // sit proud of the post front face
-  const nY = Math.sin(BACK), nZ = Math.cos(BACK); // post front-face normal
   for(let i=0;i<BACK_SLAT_COUNT;i++){
     const t  = sLo + i*step;
-    const cy = t*Math.cos(BACK) + off*nY;
-    const cz = (BACK_FOOT_Z - t*Math.sin(BACK)) + off*nZ;
+    const cy = backrest.y0 + t*dirY + off*nY;
+    const cz = backrest.z0 + t*dirZ + off*nZ;
     add('back-slat-'+(i+1),'Backrest slat '+(i+1),'2x4','2×4 · 48″',
-        [W, W4, TH], [0, cy, cz], -BACK);
+        [W, W4, TH], [0, cy, cz], -RCL);
   }
 }
 
-// ---- Two bottom cross beams (front + set-back rear) ----
+// ---- Two bottom cross beams (front + rear) joining the A-frames ----
 add('beam-front','Bottom cross beam – front','2x4','2×4 · 45″',
-    [BEAM_LEN, W4, TH], [0, BOT_CY, frontLegZ(BOT_CY)]);
-add('beam-rear','Bottom cross beam – rear (set back)','2x4','2×4 · 45″',
-    [BEAM_LEN, W4, TH], [0, BOT_CY, backPostZ(BOT_CY)]);
+    [BEAM_LEN, W4, TH], [0, BOT_RAIL_CY, frontLegZ(BOT_RAIL_CY)]);
+add('beam-rear','Bottom cross beam – rear','2x4','2×4 · 45″',
+    [BEAM_LEN, W4, TH], [0, BOT_RAIL_CY, backLegZ(BOT_RAIL_CY)]);
 
 /* =====================================================================
    THREE.JS SCENE
@@ -434,12 +444,13 @@ function addBolt(x,y,z){
 }
 // at both A-frames, one bolt per major joint
 for(const sx of [-LEG_X, LEG_X]){
-  addBolt(sx, ARM_CY,        frontLegZ(ARM_CY));      // armrest ↔ front leg
-  addBolt(sx, ARM_CY,        backPostZ(ARM_CY));      // armrest ↔ back post
-  addBolt(sx, SEAT_RAIL_CY,  frontLegZ(SEAT_RAIL_CY));// seat rail ↔ front leg
-  addBolt(sx, SEAT_RAIL_CY,  backPostZ(SEAT_RAIL_CY));// seat rail ↔ back post
-  addBolt(sx, BOT_CY,        frontLegZ(BOT_CY));      // bottom rail / front beam ↔ front leg
-  addBolt(sx, BOT_CY,        backPostZ(BOT_CY));      // bottom rail / rear beam ↔ back post
+  addBolt(sx, LEG_TOP_Y,     frontLegZ(LEG_TOP_Y));    // armrest ↔ front leg
+  addBolt(sx, ARM_CY,        backrestZ(ARM_CY));       // armrest ↔ backrest
+  addBolt(sx, 15,            backLegZ(15));            // backrest ↔ back leg
+  addBolt(sx, SEAT_RAIL_CY,  frontLegZ(SEAT_RAIL_CY)); // seat rail ↔ front leg
+  addBolt(sx, SEAT_RAIL_CY,  backLegZ(SEAT_RAIL_CY));  // seat rail ↔ back leg
+  addBolt(sx, BOT_RAIL_CY,   frontLegZ(BOT_RAIL_CY));  // bottom rail / front beam ↔ front leg
+  addBolt(sx, BOT_RAIL_CY,   backLegZ(BOT_RAIL_CY));   // bottom rail / rear beam ↔ back leg
 }
 
 /* =====================================================================
@@ -526,13 +537,14 @@ fab.onclick = ()=> setCollapsed(false);
   partsel.appendChild(optAll);
   // group headings via optgroups
   const groups = {
-    'Legs & posts': p=>p.userData.partName.startsWith('leg-') || p.userData.partName.startsWith('post-'),
-    'Armrests':     p=>p.userData.partName.startsWith('armrest'),
-    'Seat rails':   p=>p.userData.partName.startsWith('seatrail'),
-    'Bottom rails': p=>p.userData.partName.startsWith('bottomrail'),
-    'Seat slats':   p=>p.userData.partName.startsWith('seat-slat'),
-    'Backrest':     p=>p.userData.partName.startsWith('back-slat'),
-    'Cross beams':  p=>p.userData.partName.startsWith('beam-'),
+    'A-frame legs':   p=>p.userData.partName.startsWith('leg-'),
+    'Backrest posts': p=>p.userData.partName.startsWith('backrest-'),
+    'Armrests':       p=>p.userData.partName.startsWith('armrest'),
+    'Seat rails':     p=>p.userData.partName.startsWith('seatrail'),
+    'Bottom rails':   p=>p.userData.partName.startsWith('bottomrail'),
+    'Seat slats':     p=>p.userData.partName.startsWith('seat-slat'),
+    'Backrest slats': p=>p.userData.partName.startsWith('back-slat'),
+    'Cross beams':    p=>p.userData.partName.startsWith('beam-'),
   };
   for(const [gname,test] of Object.entries(groups)){
     const og = document.createElement('optgroup');
