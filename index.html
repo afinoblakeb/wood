@@ -1,0 +1,587 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>2×4 Garden Bench — Interactive 3D Model</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Ctext y='14' font-size='14'%3E%F0%9F%AA%91%3C/text%3E%3C/svg%3E" />
+<style>
+  :root{
+    --panel-bg: rgba(31,24,16,.86);
+    --panel-line:#5c4a33;
+    --cream:#f7f1e6;
+    --honey:#d2913f;
+    --honey-d:#a96f27;
+    --accent:#3f7d4e;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%;margin:0}
+  body{
+    font-family:"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    background:#0e0c09;color:var(--cream);overflow:hidden;
+  }
+  #app{position:fixed;inset:0}
+  canvas{display:block}
+
+  /* ---------- Control panel ---------- */
+  #ui{
+    position:fixed;top:14px;left:14px;width:290px;max-width:calc(100vw - 28px);
+    background:var(--panel-bg);border:1px solid var(--panel-line);
+    border-radius:12px;backdrop-filter:blur(6px);
+    box-shadow:0 8px 30px rgba(0,0,0,.45);
+    padding:14px 14px 16px;z-index:10;
+    max-height:calc(100vh - 28px);overflow:auto;
+  }
+  #ui h1{
+    font:700 1.05rem/1.2 Georgia,serif;margin:0 0 2px;color:#fff;
+    display:flex;align-items:center;gap:.4rem;
+  }
+  #ui .sub{font-size:.72rem;color:#cbb79a;margin:0 0 12px}
+  .group{margin:0 0 14px}
+  .group > .lbl{
+    font-size:.68rem;text-transform:uppercase;letter-spacing:.08em;
+    color:#cbb79a;margin:0 0 6px;font-weight:600;
+  }
+  .modes{display:flex;gap:6px}
+  .modes button{flex:1}
+  button{
+    font:600 .8rem/1 inherit;color:var(--cream);
+    background:#3a2c1c;border:1px solid var(--panel-line);
+    padding:8px 6px;border-radius:8px;cursor:pointer;transition:.12s;
+  }
+  button:hover{background:#4a3825;border-color:var(--honey)}
+  button.active{background:var(--honey);border-color:var(--honey);color:#241a0e}
+  input[type=range]{width:100%;accent-color:var(--honey);cursor:pointer}
+  .rowflex{display:flex;align-items:center;justify-content:space-between;gap:8px}
+  .pct{font-variant-numeric:tabular-nums;font-size:.8rem;color:#e7d6b6;min-width:42px;text-align:right}
+  select{
+    width:100%;font:inherit;font-size:.82rem;color:var(--cream);
+    background:#3a2c1c;border:1px solid var(--panel-line);
+    border-radius:8px;padding:8px;cursor:pointer;
+  }
+  label.chk{display:flex;align-items:center;gap:8px;font-size:.82rem;color:#e7d6b6;cursor:pointer;user-select:none}
+  label.chk input{accent-color:var(--honey);width:16px;height:16px;cursor:pointer}
+
+  /* ---------- Selected part readout ---------- */
+  #readout{
+    margin-top:4px;background:#241a0e;border:1px solid var(--panel-line);
+    border-radius:8px;padding:10px 12px;
+  }
+  #readout .pname{font:600 .95rem Georgia,serif;color:#fff}
+  #readout .pdim{font-size:.78rem;color:#d2b88c;margin-top:2px}
+  #readout .phint{font-size:.7rem;color:#9c8a6d;margin-top:6px}
+
+  .links{margin-top:12px;font-size:.74rem;color:#cbb79a}
+  .links a{color:var(--honey);text-decoration:none}
+  .links a:hover{text-decoration:underline}
+
+  /* ---------- Help / hint badge ---------- */
+  #hint{
+    position:fixed;bottom:12px;right:14px;z-index:10;
+    font-size:.72rem;color:#cbb79a;background:var(--panel-bg);
+    border:1px solid var(--panel-line);border-radius:8px;padding:7px 11px;
+    backdrop-filter:blur(6px);
+  }
+  #loading{
+    position:fixed;inset:0;display:grid;place-items:center;z-index:20;
+    background:#0e0c09;color:#cbb79a;font:600 1rem Georgia,serif;
+  }
+  @media (max-width:560px){
+    #ui{width:calc(100vw - 28px)}
+    #hint{display:none}
+  }
+</style>
+</head>
+<body>
+<div id="app"></div>
+
+<div id="loading">Loading 3D model…</div>
+
+<div id="ui">
+  <h1>🪑 2×4 Garden Bench</h1>
+  <p class="sub">Interactive build model · 48″ × 36½″ × 30½″ · actual lumber sizes</p>
+
+  <div class="group">
+    <div class="lbl">Render mode</div>
+    <div class="modes">
+      <button id="m-assembled" class="active">Assembled</button>
+      <button id="m-exploded">Exploded</button>
+      <button id="m-individual">Individual</button>
+    </div>
+  </div>
+
+  <div class="group">
+    <div class="rowflex">
+      <span class="lbl" style="margin:0">Explode</span>
+      <span class="pct" id="explode-pct">0%</span>
+    </div>
+    <input type="range" id="explode" min="0" max="100" value="0" />
+  </div>
+
+  <div class="group">
+    <div class="lbl">Part selector</div>
+    <select id="partsel"></select>
+  </div>
+
+  <div class="group" style="margin-bottom:8px">
+    <label class="chk"><input type="checkbox" id="boltchk" checked /> Show bolts / hardware</label>
+  </div>
+
+  <div id="readout">
+    <div class="pname" id="ro-name">Whole assembly</div>
+    <div class="pdim" id="ro-dim">24 boards · all dimensional lumber</div>
+    <div class="phint" id="ro-hint">Click a board to inspect it.</div>
+  </div>
+
+  <div class="links">
+    📋 <a href="plans.html">All plans</a> ·
+    <a href="projects/2x4-garden-bench.html">Cut list &amp; build steps →</a>
+  </div>
+</div>
+
+<div id="hint">Drag to rotate · scroll to zoom · right-drag to pan</div>
+
+<script type="importmap">
+{
+  "imports":{
+    "three":"https://unpkg.com/three@0.160.0/build/three.module.js",
+    "three/addons/":"https://unpkg.com/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+/* =====================================================================
+   PARAMETRIC DIMENSIONS  (all values in INCHES; 1 unit = 1 inch)
+   ===================================================================== */
+const W = 48;          // overall width  (left-right, X)
+const H = 36.5;        // overall height (Y)
+const D = 30.5;        // overall depth  (front-back, Z) — footprint/bounding target
+const SEAT_H = 17;     // top of seat slats
+const ARM_H  = 24.5;   // top of armrests
+const BACK_ANGLE_DEG = 12;   // rear-leg / backrest lean off vertical (10–15°)
+const SEAT_SLAT_COUNT = 5;
+const BACK_SLAT_COUNT = 5;
+
+// Actual (dressed) lumber cross-sections — NOT nominal
+const LUMBER = {
+  '4x4': { a:3.5, b:3.5 },
+  '2x6': { a:1.5, b:5.5 },
+  '2x4': { a:1.5, b:3.5 },
+  '2x2': { a:1.5, b:1.5 },
+};
+const F4   = LUMBER['4x4'].a;   // 3.5  (4x4 square)
+const T2   = LUMBER['2x4'].a;   // 1.5  (2x thickness)
+const W4   = LUMBER['2x4'].b;   // 3.5  (2x4 width)
+
+// Derived geometry helpers ------------------------------------------------
+const rad  = THREE.MathUtils.degToRad;
+const ANGLE = rad(BACK_ANGLE_DEG);
+const TAN = Math.tan(ANGLE), SIN = Math.sin(ANGLE), COS = Math.cos(ANGLE);
+
+const LEG_X     = W/2 - F4/2;     // 22.25  centre X of legs
+const INNER_X   = W/2 - F4;       // 20.5   inner face of legs
+const RAIL_X    = INNER_X - T2/2; // 19.75  centre X of side rails (against leg inner face)
+const RAIL_TOP  = SEAT_H - T2;    // 15.5   top of seat-frame rails = bottom of slats
+const RAIL_CY   = RAIL_TOP - W4/2;// 13.75  centre Y of seat-frame rails (2x4 on edge)
+const FRONT_Z   = 10;             // centre Z of front legs / front rail
+const REAR_FOOT_Z = -7;           // centre Z of rear-leg foot (at ground)
+const FRONT_LEG_H = ARM_H - T2;   // 23     front leg height (armrest sits on top)
+
+// Centre-Z of the angled rear leg at a given height y
+const rearZ = (y) => REAR_FOOT_Z - y * TAN;
+// Front face (toward seat) Z of the rear leg at height y
+const rearFrontZ = (y) => rearZ(y) + (F4/2)/COS;
+
+const REAR_RAIL_Z = rearZ(RAIL_CY);      // rear seat rail Z
+const REAR_LEG_LEN = H / COS;            // length of angled rear leg along its axis
+
+/* =====================================================================
+   PART DEFINITIONS
+   Each entry becomes one named BoxGeometry mesh (kept separate).
+   size:[x,y,z]  pos:[x,y,z]  rotX: rotation about X (for angled parts)
+   ===================================================================== */
+const partDefs = [];
+const add = (name,label,lumber,dim,size,pos,rotX=0)=>
+  partDefs.push({name,label,lumber,dim,size,pos,rotX});
+
+// ---- Legs (4x4) ----
+add('leg-front-left','Front leg (left)','4x4','4×4 · 23″',
+    [F4,FRONT_LEG_H,F4], [-LEG_X, FRONT_LEG_H/2, FRONT_Z]);
+add('leg-front-right','Front leg (right)','4x4','4×4 · 23″',
+    [F4,FRONT_LEG_H,F4], [ LEG_X, FRONT_LEG_H/2, FRONT_Z]);
+// Rear legs: angled back, run full height, form the backrest support
+{
+  const midS = REAR_LEG_LEN/2;
+  const cy = midS*COS;
+  const cz = REAR_FOOT_Z - midS*SIN;
+  add('leg-rear-left','Rear leg / back post (left)','4x4','4×4 · 37¼″ (angled '+BACK_ANGLE_DEG+'°)',
+      [F4,REAR_LEG_LEN,F4], [-LEG_X, cy, cz], -ANGLE);
+  add('leg-rear-right','Rear leg / back post (right)','4x4','4×4 · 37¼″ (angled '+BACK_ANGLE_DEG+'°)',
+      [F4,REAR_LEG_LEN,F4], [ LEG_X, cy, cz], -ANGLE);
+}
+
+// ---- Armrests (2x4, flat, running front-to-back) ----
+{
+  const tip = FRONT_Z + F4/2 + 2;       // 2″ front overhang past the leg face
+  const back = rearFrontZ(ARM_H);       // meets rear leg front face at armrest height
+  const len = tip - back;
+  const cz  = (tip + back)/2;
+  const cy  = ARM_H - T2/2;
+  add('armrest-left','Armrest (left)','2x4','2×4 · '+len.toFixed(1)+'″',
+      [W4,T2,len], [-LEG_X, cy, cz]);
+  add('armrest-right','Armrest (right)','2x4','2×4 · '+len.toFixed(1)+'″',
+      [W4,T2,len], [ LEG_X, cy, cz]);
+}
+
+// ---- Seat frame (2x4 on edge) ----
+{
+  const sideLen = FRONT_Z - REAR_RAIL_Z;        // along Z
+  const sideCz  = (FRONT_Z + REAR_RAIL_Z)/2;
+  add('seatrail-side-left','Seat rail – side (left)','2x4','2×4 · '+sideLen.toFixed(1)+'″',
+      [T2,W4,sideLen], [-RAIL_X, RAIL_CY, sideCz]);
+  add('seatrail-side-right','Seat rail – side (right)','2x4','2×4 · '+sideLen.toFixed(1)+'″',
+      [T2,W4,sideLen], [ RAIL_X, RAIL_CY, sideCz]);
+  const crossLen = W - 2*F4;                     // 41″ between leg inner faces
+  add('seatrail-front','Seat rail – front','2x4','2×4 · 41″',
+      [crossLen,W4,T2], [0, RAIL_CY, FRONT_Z]);
+  add('seatrail-rear','Seat rail – rear','2x4','2×4 · 41″',
+      [crossLen,W4,T2], [0, RAIL_CY, REAR_RAIL_Z]);
+}
+
+// ---- Seat slats (2x4 flat, running left-to-right) ----
+{
+  const frontC = FRONT_Z, rearC = REAR_RAIL_Z;
+  const step = (frontC - rearC)/(SEAT_SLAT_COUNT-1);
+  for(let i=0;i<SEAT_SLAT_COUNT;i++){
+    const z = frontC - i*step;
+    add('seat-slat-'+(i+1),'Seat slat '+(i+1),'2x4','2×4 · 48″',
+        [W, T2, W4], [0, SEAT_H - T2/2, z]);
+  }
+}
+
+// ---- Backrest slats (2x4, left-to-right, mounted on angled rear legs) ----
+{
+  const sLo = 19, sHi = REAR_LEG_LEN - 1.3;      // along rear-leg axis
+  const step = (sHi - sLo)/(BACK_SLAT_COUNT-1);
+  const off = F4/2 + T2/2;                        // sit on front face of rear legs
+  for(let i=0;i<BACK_SLAT_COUNT;i++){
+    const s = sLo + i*step;
+    const cy = s*COS + off*SIN;
+    const cz = (REAR_FOOT_Z - s*SIN) + off*COS;
+    add('back-slat-'+(i+1),'Backrest slat '+(i+1),'2x4','2×4 · 48″',
+        [W, W4, T2], [0, cy, cz], -ANGLE);
+  }
+}
+
+// ---- Lower stretchers (2x4 on edge, near base) ----
+{
+  const yB = 4;
+  const sideLen = FRONT_Z - rearZ(yB);
+  const sideCz  = (FRONT_Z + rearZ(yB))/2;
+  add('stretcher-side-left','Lower stretcher – side (left)','2x4','2×4 · '+sideLen.toFixed(1)+'″',
+      [T2,W4,sideLen], [-RAIL_X, yB, sideCz]);
+  add('stretcher-side-right','Lower stretcher – side (right)','2x4','2×4 · '+sideLen.toFixed(1)+'″',
+      [T2,W4,sideLen], [ RAIL_X, yB, sideCz]);
+  const crossLen = W - 2*F4;
+  add('stretcher-front','Lower stretcher – front','2x4','2×4 · 41″',
+      [crossLen,W4,T2], [0, yB, FRONT_Z]);
+  add('stretcher-rear','Lower stretcher – rear','2x4','2×4 · 41″',
+      [crossLen,W4,T2], [0, yB, rearZ(yB)]);
+}
+
+/* =====================================================================
+   THREE.JS SCENE
+   ===================================================================== */
+const app = document.getElementById('app');
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x10100d);
+scene.fog = new THREE.Fog(0x10100d, 130, 320);
+
+const camera = new THREE.PerspectiveCamera(42, innerWidth/innerHeight, 0.5, 2000);
+camera.position.set(60, 42, 72);
+
+const renderer = new THREE.WebGLRenderer({ antialias:true });
+renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+renderer.setSize(innerWidth, innerHeight);
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+app.appendChild(renderer.domElement);
+
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true;
+controls.dampingFactor = 0.08;
+controls.target.set(0, 16, -1);
+controls.maxPolarAngle = Math.PI*0.5 + 0.18;
+controls.minDistance = 28;
+controls.maxDistance = 200;
+
+// ---- Lighting ----
+scene.add(new THREE.AmbientLight(0xfff4e2, 0.55));
+const hemi = new THREE.HemisphereLight(0xbfd6ff, 0x4a3c2a, 0.35);
+scene.add(hemi);
+
+const key = new THREE.DirectionalLight(0xfff1d6, 2.1);
+key.position.set(48, 78, 40);
+key.castShadow = true;
+key.shadow.mapSize.set(2048,2048);
+key.shadow.camera.near = 10;
+key.shadow.camera.far = 260;
+key.shadow.camera.left = -60; key.shadow.camera.right = 60;
+key.shadow.camera.top = 70;   key.shadow.camera.bottom = -20;
+key.shadow.bias = -0.0004;
+key.shadow.radius = 4;
+scene.add(key);
+
+const fill = new THREE.DirectionalLight(0xaecbff, 0.5);
+fill.position.set(-40, 30, -30);
+scene.add(fill);
+
+// ---- Ground + grid ----
+const ground = new THREE.Mesh(
+  new THREE.CircleGeometry(160, 64),
+  new THREE.MeshStandardMaterial({ color:0x2a2a26, roughness:1 })
+);
+ground.rotation.x = -Math.PI/2;
+ground.position.y = 0;
+ground.receiveShadow = true;
+scene.add(ground);
+
+const grid = new THREE.GridHelper(240, 80, 0x4a4a40, 0x33332c);
+grid.position.y = 0.02;
+grid.material.transparent = true; grid.material.opacity = 0.5;
+scene.add(grid);
+
+/* =====================================================================
+   BUILD MESHES
+   ===================================================================== */
+const EXPLODE_CENTER = new THREE.Vector3(0, 18, -1);
+const benchGroup = new THREE.Group();
+scene.add(benchGroup);
+
+const boardMat = new THREE.MeshStandardMaterial({ color:0x9c6a39, roughness:0.78, metalness:0.02 });
+
+const parts = [];      // board meshes
+for(const def of partDefs){
+  const geo = new THREE.BoxGeometry(def.size[0], def.size[1], def.size[2]);
+  const mat = boardMat.clone();
+  // a little per-board colour variation for realism
+  mat.color.offsetHSL(0, (Math.random()-0.5)*0.03, (Math.random()-0.5)*0.05);
+  const mesh = new THREE.Mesh(geo, mat);
+  mesh.position.set(def.pos[0], def.pos[1], def.pos[2]);
+  if(def.rotX) mesh.rotation.x = def.rotX;
+  mesh.castShadow = true;
+  mesh.receiveShadow = true;
+  mesh.userData = {
+    partName: def.name, label: def.label, lumber: def.lumber, dim: def.dim,
+    home: mesh.position.clone(), isBolt:false,
+    baseColor: mesh.material.color.getHex()
+  };
+  benchGroup.add(mesh);
+  parts.push(mesh);
+}
+
+// ---- Bolts / hardware (dark cylinders at the major joints) ----
+const boltsGroup = new THREE.Group();
+scene.add(boltsGroup);
+const boltMat = new THREE.MeshStandardMaterial({ color:0x23252a, roughness:0.35, metalness:0.85 });
+const boltGeo = new THREE.CylinderGeometry(0.42, 0.42, F4 + 0.8, 14);
+
+function addBolt(x,y,z){
+  const m = new THREE.Mesh(boltGeo, boltMat);
+  m.rotation.z = Math.PI/2;            // lie along X, through the leg
+  m.position.set(x,y,z);
+  m.castShadow = true;
+  m.userData = { isBolt:true };
+  boltsGroup.add(m);
+  m.userData.home = m.position.clone();
+}
+// at both legs, on each side
+for(const sx of [-LEG_X, LEG_X]){
+  addBolt(sx, RAIL_CY, FRONT_Z);            // front leg ↔ seat rail
+  addBolt(sx, RAIL_CY, REAR_RAIL_Z);        // rear leg ↔ seat rail
+  addBolt(sx, 4,        FRONT_Z);           // front leg ↔ lower stretcher
+  addBolt(sx, 4,        rearZ(4));          // rear leg ↔ lower stretcher
+  addBolt(sx, ARM_H-T2, FRONT_Z);           // armrest ↔ front leg
+  addBolt(sx, ARM_H-1,  rearFrontZ(ARM_H)); // armrest ↔ rear leg
+}
+
+/* =====================================================================
+   STATE + INTERACTION
+   ===================================================================== */
+let mode = 'assembled';        // 'assembled' | 'exploded' | 'individual'
+let explodeFrac = 0;           // 0..1
+let selected = 'all';
+let showBolts = true;
+
+function applyExplode(){
+  const scale = 1 + explodeFrac * 1.9;
+  for(const m of parts){
+    m.position.copy(m.userData.home).sub(EXPLODE_CENTER).multiplyScalar(scale).add(EXPLODE_CENTER);
+  }
+  for(const m of boltsGroup.children){
+    m.position.copy(m.userData.home).sub(EXPLODE_CENTER).multiplyScalar(scale).add(EXPLODE_CENTER);
+  }
+}
+
+function setEmissive(m, on){
+  m.material.emissive.setHex(on ? 0x77400a : 0x000000);
+  m.material.emissiveIntensity = on ? 0.9 : 0;
+}
+
+function updateAppearance(){
+  const isolating = (mode === 'individual' && selected !== 'all');
+  for(const m of parts){
+    const sel = m.userData.partName === selected;
+    const mat = m.material;
+    if(isolating && !sel){
+      mat.transparent = true; mat.opacity = 0.07; mat.depthWrite = false;
+      setEmissive(m, false);
+    } else {
+      mat.transparent = false; mat.opacity = 1; mat.depthWrite = true;
+      setEmissive(m, sel && selected !== 'all');
+    }
+  }
+  // hide hardware when isolating a (non-bolt) board, else honour the checkbox
+  boltsGroup.visible = showBolts && !isolating;
+}
+
+function updateReadout(){
+  const nameEl = document.getElementById('ro-name');
+  const dimEl  = document.getElementById('ro-dim');
+  const hintEl = document.getElementById('ro-hint');
+  if(selected === 'all'){
+    nameEl.textContent = 'Whole assembly';
+    dimEl.textContent  = parts.length + ' boards · ' + W + '″ × ' + H + '″ × ' + D + '″';
+    hintEl.textContent = 'Click a board to inspect it.';
+  } else {
+    const m = parts.find(p=>p.userData.partName === selected);
+    nameEl.textContent = m.userData.label;
+    dimEl.textContent  = m.userData.lumber + ' · ' + m.userData.dim;
+    hintEl.textContent = mode === 'individual'
+      ? 'Isolated. Choose “Show all parts” to reset.'
+      : 'Highlighted in the assembly.';
+  }
+}
+
+/* ---------- UI wiring ---------- */
+const btnA = document.getElementById('m-assembled');
+const btnE = document.getElementById('m-exploded');
+const btnI = document.getElementById('m-individual');
+const slider = document.getElementById('explode');
+const pct = document.getElementById('explode-pct');
+const partsel = document.getElementById('partsel');
+const boltchk = document.getElementById('boltchk');
+
+// populate dropdown
+{
+  const optAll = document.createElement('option');
+  optAll.value = 'all'; optAll.textContent = '— Show all parts —';
+  partsel.appendChild(optAll);
+  // group headings via optgroups
+  const groups = {
+    'Legs':       p=>p.userData.partName.startsWith('leg-'),
+    'Armrests':   p=>p.userData.partName.startsWith('armrest'),
+    'Seat frame': p=>p.userData.partName.startsWith('seatrail'),
+    'Seat slats': p=>p.userData.partName.startsWith('seat-slat'),
+    'Backrest':   p=>p.userData.partName.startsWith('back-slat'),
+    'Stretchers': p=>p.userData.partName.startsWith('stretcher'),
+  };
+  for(const [gname,test] of Object.entries(groups)){
+    const og = document.createElement('optgroup');
+    og.label = gname;
+    for(const m of parts.filter(test)){
+      const o = document.createElement('option');
+      o.value = m.userData.partName; o.textContent = m.userData.label;
+      og.appendChild(o);
+    }
+    partsel.appendChild(og);
+  }
+}
+
+function setMode(next){
+  mode = next;
+  btnA.classList.toggle('active', mode==='assembled');
+  btnE.classList.toggle('active', mode==='exploded');
+  btnI.classList.toggle('active', mode==='individual');
+
+  if(mode==='assembled'){
+    explodeFrac = 0; slider.value = 0; pct.textContent = '0%';
+    selected = 'all'; partsel.value = 'all';
+  } else if(mode==='exploded'){
+    if(explodeFrac === 0){ explodeFrac = 0.5; slider.value = 50; pct.textContent = '50%'; }
+    selected = 'all'; partsel.value = 'all';
+  } else if(mode==='individual'){
+    if(selected === 'all'){ selected = parts[0].userData.partName; partsel.value = selected; }
+  }
+  applyExplode(); updateAppearance(); updateReadout();
+}
+
+btnA.onclick = ()=>setMode('assembled');
+btnE.onclick = ()=>setMode('exploded');
+btnI.onclick = ()=>setMode('individual');
+
+slider.oninput = ()=>{
+  explodeFrac = (+slider.value)/100;
+  pct.textContent = slider.value + '%';
+  if(explodeFrac>0 && mode==='assembled') setMode('exploded');
+  applyExplode();
+};
+
+partsel.onchange = ()=>{
+  selected = partsel.value;
+  if(selected!=='all' && mode!=='individual' && mode!=='exploded'){ /* keep mode */ }
+  if(selected==='all' && mode==='individual'){ /* stay in individual but show all */ }
+  updateAppearance(); updateReadout();
+};
+
+boltchk.onchange = ()=>{ showBolts = boltchk.checked; updateAppearance(); };
+
+/* ---------- Raycast click-to-select ---------- */
+const raycaster = new THREE.Raycaster();
+const pointer = new THREE.Vector2();
+let downXY = null;
+renderer.domElement.addEventListener('pointerdown', e=>{ downXY=[e.clientX,e.clientY]; });
+renderer.domElement.addEventListener('pointerup', e=>{
+  if(!downXY) return;
+  const moved = Math.hypot(e.clientX-downXY[0], e.clientY-downXY[1]);
+  downXY = null;
+  if(moved > 5) return;          // it was a drag, not a click
+  pointer.x = (e.clientX/innerWidth)*2 - 1;
+  pointer.y = -(e.clientY/innerHeight)*2 + 1;
+  raycaster.setFromCamera(pointer, camera);
+  const hits = raycaster.intersectObjects(parts, false);
+  if(hits.length){
+    selected = hits[0].object.userData.partName;
+    partsel.value = selected;
+    updateAppearance(); updateReadout();
+  }
+});
+
+/* =====================================================================
+   RENDER LOOP
+   ===================================================================== */
+addEventListener('resize', ()=>{
+  camera.aspect = innerWidth/innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth, innerHeight);
+});
+
+function tick(){
+  controls.update();
+  renderer.render(scene, camera);
+  requestAnimationFrame(tick);
+}
+
+// init
+applyExplode();
+updateAppearance();
+updateReadout();
+document.getElementById('loading').remove();
+tick();
+</script>
+</body>
+</html>

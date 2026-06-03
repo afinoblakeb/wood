@@ -1,0 +1,284 @@
+/* ===========================================================
+   Woodworking Plans — site styles
+   A warm, paper-and-timber theme that prints cleanly.
+   =========================================================== */
+
+:root {
+  --wood-dark:   #5b3a21;
+  --wood:        #8a5a2b;
+  --wood-light:  #b07c43;
+  --honey:       #c8893e;
+  --cream:       #f7f1e6;
+  --paper:       #fdfaf4;
+  --ink:         #2b2419;
+  --ink-soft:    #5c5344;
+  --line:        #e3d8c4;
+  --accent:      #3f7d4e;
+  --shadow:      0 1px 2px rgba(43, 36, 25, .08), 0 6px 18px rgba(43, 36, 25, .06);
+  --radius:      10px;
+  --maxw:        1040px;
+}
+
+* { box-sizing: border-box; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  margin: 0;
+  font-family: "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  color: var(--ink);
+  background: var(--paper);
+  line-height: 1.65;
+}
+
+/* ---- Typography ---- */
+h1, h2, h3, h4 {
+  font-family: Georgia, "Times New Roman", serif;
+  color: var(--wood-dark);
+  line-height: 1.2;
+  margin: 0 0 .4em;
+}
+h1 { font-size: clamp(1.9rem, 4vw, 2.9rem); }
+h2 { font-size: clamp(1.4rem, 3vw, 2rem); margin-top: 1.6em; }
+h3 { font-size: 1.2rem; margin-top: 1.4em; }
+p  { margin: 0 0 1em; }
+a  { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+.muted { color: var(--ink-soft); }
+.center { text-align: center; }
+
+/* ---- Layout ---- */
+.wrap { max-width: var(--maxw); margin: 0 auto; padding: 0 1.25rem; }
+
+/* ---- Header ---- */
+.site-header {
+  background: linear-gradient(135deg, var(--wood-dark), var(--wood));
+  color: var(--cream);
+  border-bottom: 4px solid var(--honey);
+}
+.site-header .wrap {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: .75rem;
+  padding-top: 1rem;
+  padding-bottom: 1rem;
+}
+.brand {
+  display: flex;
+  align-items: center;
+  gap: .6rem;
+  font-family: Georgia, serif;
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: var(--cream);
+}
+.brand:hover { text-decoration: none; }
+.brand .logo { font-size: 1.6rem; }
+.nav a { color: var(--cream); margin-left: 1.25rem; opacity: .9; }
+.nav a:hover { opacity: 1; }
+
+/* ---- Hero ---- */
+.hero {
+  background:
+    radial-gradient(900px 300px at 80% -10%, rgba(200,137,62,.25), transparent),
+    var(--cream);
+  border-bottom: 1px solid var(--line);
+  padding: 3rem 0;
+}
+.hero p.lead { font-size: 1.15rem; max-width: 60ch; color: var(--ink-soft); }
+.badge {
+  display: inline-block;
+  background: var(--accent);
+  color: #fff;
+  font-size: .75rem;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  padding: .25rem .6rem;
+  border-radius: 999px;
+  margin-bottom: 1rem;
+}
+
+/* ---- Project grid ---- */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1.5rem;
+  margin: 2rem 0 3rem;
+}
+.card {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  transition: transform .15s ease, box-shadow .15s ease;
+}
+.card:hover { transform: translateY(-3px); box-shadow: 0 10px 26px rgba(43,36,25,.12); }
+.card a.card-link { color: inherit; display: flex; flex-direction: column; height: 100%; }
+.card a.card-link:hover { text-decoration: none; }
+.card .thumb {
+  background: linear-gradient(135deg, #f0e4cf, #e7d3b3);
+  padding: 1rem;
+  border-bottom: 1px solid var(--line);
+}
+.card .thumb svg { width: 100%; height: auto; display: block; }
+.card .card-body { padding: 1.1rem 1.25rem 1.4rem; flex: 1; }
+.card h3 { margin-top: 0; }
+.card .meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .4rem;
+  margin-top: .8rem;
+}
+.tag {
+  font-size: .72rem;
+  background: var(--cream);
+  border: 1px solid var(--line);
+  color: var(--ink-soft);
+  padding: .15rem .55rem;
+  border-radius: 999px;
+}
+
+/* ---- Article / plan page ---- */
+.plan { padding: 2.5rem 0 4rem; }
+.plan .lead { font-size: 1.12rem; color: var(--ink-soft); }
+
+.specs {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 1rem;
+  margin: 1.5rem 0 2rem;
+}
+.spec {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 1rem;
+  text-align: center;
+  box-shadow: var(--shadow);
+}
+.spec .num { font-family: Georgia, serif; font-size: 1.5rem; color: var(--wood); font-weight: 700; }
+.spec .label { font-size: .78rem; text-transform: uppercase; letter-spacing: .04em; color: var(--ink-soft); }
+
+.figure {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 1.25rem;
+  margin: 1.5rem 0;
+  box-shadow: var(--shadow);
+}
+.figure svg { width: 100%; height: auto; display: block; }
+.figure figcaption { font-size: .85rem; color: var(--ink-soft); margin-top: .75rem; text-align: center; }
+
+/* ---- Tables ---- */
+.table-scroll { overflow-x: auto; }
+table {
+  width: 100%;
+  border-collapse: collapse;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  overflow: hidden;
+  margin: 1rem 0 1.5rem;
+  font-size: .95rem;
+}
+caption { text-align: left; font-weight: 700; color: var(--wood-dark); padding: .5rem 0; }
+th, td { padding: .6rem .8rem; text-align: left; border-bottom: 1px solid var(--line); }
+thead th { background: var(--wood-dark); color: var(--cream); font-weight: 600; }
+tbody tr:nth-child(even) { background: var(--cream); }
+tbody tr:hover { background: #f3ead7; }
+td.num, th.num { text-align: center; white-space: nowrap; }
+tfoot td { font-weight: 700; background: #f3ead7; }
+
+/* ---- Steps ---- */
+.steps { counter-reset: step; list-style: none; padding: 0; margin: 1rem 0; }
+.steps > li {
+  position: relative;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-left: 4px solid var(--honey);
+  border-radius: var(--radius);
+  padding: 1rem 1.25rem 1rem 3.5rem;
+  margin-bottom: 1rem;
+  box-shadow: var(--shadow);
+}
+.steps > li::before {
+  counter-increment: step;
+  content: counter(step);
+  position: absolute;
+  left: .9rem;
+  top: 1rem;
+  width: 1.8rem;
+  height: 1.8rem;
+  background: var(--honey);
+  color: #fff;
+  font-family: Georgia, serif;
+  font-weight: 700;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+}
+.steps h4 { margin: 0 0 .3rem; }
+
+/* ---- Callout ---- */
+.callout {
+  background: #fff8ec;
+  border: 1px solid #efd9a8;
+  border-left: 4px solid var(--honey);
+  border-radius: var(--radius);
+  padding: 1rem 1.25rem;
+  margin: 1.5rem 0;
+}
+.callout strong { color: var(--wood-dark); }
+
+/* ---- TOC ---- */
+.toc {
+  background: var(--cream);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 1rem 1.25rem;
+  margin: 1.5rem 0;
+}
+.toc ul { margin: .3rem 0 0; padding-left: 1.2rem; }
+.toc li { margin: .2rem 0; }
+
+/* ---- Checklist ---- */
+.check { list-style: none; padding: 0; margin: 1rem 0; }
+.check li { padding: .25rem 0 .25rem 1.8rem; position: relative; }
+.check li::before {
+  content: "✔";
+  position: absolute; left: 0; top: .25rem;
+  color: var(--accent); font-weight: 700;
+}
+
+/* ---- Breadcrumb / back link ---- */
+.crumb { margin: 1.25rem 0 0; font-size: .9rem; }
+
+/* ---- Footer ---- */
+.site-footer {
+  background: var(--wood-dark);
+  color: var(--cream);
+  margin-top: 3rem;
+  padding: 2rem 0;
+  font-size: .9rem;
+}
+.site-footer a { color: var(--honey); }
+
+/* ---- Responsive nav stacking handled by flex-wrap ---- */
+
+/* ---- Print: produce a clean shop printout ---- */
+@media print {
+  .site-header, .site-footer, .nav, .crumb, .toc { display: none !important; }
+  body { background: #fff; color: #000; font-size: 11pt; }
+  .figure, .card, .spec, table, .steps > li, .callout { box-shadow: none; }
+  a { color: #000; text-decoration: none; }
+  .plan { padding: 0; }
+  h2 { break-before: auto; }
+  table, .figure, .steps > li { break-inside: avoid; }
+}
