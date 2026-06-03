@@ -209,11 +209,11 @@ const D = 30.5;        // overall depth  (front-back, Z) — approx target
 const SEAT_TOP = 17;   // top of seat slats
 const ARM_TOP  = 25;   // top of armrests
 const LEG_SPLAY_DEG    = 12;  // each leg's lean from vertical (SYMMETRIC A)
-const BACK_RECLINE_DEG = 15;  // separate backrest recline off vertical (≈105° seat-to-back)
-const FOOT_HALF = 11;         // half the base spread: front foot +11, back foot −11 (22″ base)
+const BACK_RECLINE_DEG = 20;  // separate backrest recline off vertical (≈110° seat-to-back)
+const FOOT_HALF = 12;         // half the base spread: front foot +12, back foot −12 (24″ base)
 const BOT_RAIL_CY = 7.5;      // bottom rail centre ≈ 6″ off the floor
 const SEAT_SLAT_COUNT = 5;
-const BACK_SLAT_COUNT = 4;
+const BACK_SLAT_COUNT = 5;
 
 // Actual (dressed) lumber cross-sections — NOT nominal
 const LUMBER = {
@@ -253,10 +253,12 @@ function strut(x, z0,y0, z1,y1, xThick, profW){
 
 // Separate reclined backrest: lower end bolts behind the back leg just
 // below the seat, then reclines back to full height.
+const BACKREST_X = RAIL_X;   // bolted to the inboard face of the back leg (offset in X,
+                             // so it can overlap the leg in profile without clashing)
 const backrest = (()=>{
   const y0 = 14;
-  const z0 = backLegZ(y0) - (W4/2)*Math.cos(SPL) - TH/2;  // tucked behind the back leg
-  const y1 = H;
+  const z0 = backLegZ(y0);    // shares the back-leg line at the seat, so the lowest slat
+  const y1 = H;               // meets the seat back (closes the lumbar gap)
   const z1 = z0 - (y1 - y0)*Math.tan(RCL);
   return { y0, z0, y1, z1, len: Math.hypot(z1-z0, y1-y0) };
 })();
@@ -282,7 +284,7 @@ for(const [side,sx] of [['left',-LEG_X],['right',LEG_X]]){
   s = strut(sx, -FOOT_HALF,0, backLegZ(LEG_TOP_Y),LEG_TOP_Y, TH,W4);
   add('leg-back-'+side,'Back leg ('+side+')','2x4','2×4 · '+legLen.toFixed(1)+'″',
       s.size, s.pos, s.rotX);
-  s = strut(sx, backrest.z0,backrest.y0, backrest.z1,backrest.y1, TH,W4);
+  s = strut(Math.sign(sx)*BACKREST_X, backrest.z0,backrest.y0, backrest.z1,backrest.y1, TH,W4);
   add('backrest-'+side,'Backrest post ('+side+')','2x4','2×4 · '+backrest.len.toFixed(1)+'″(reclined '+BACK_RECLINE_DEG+'°)',
       s.size, s.pos, s.rotX);
 }
@@ -290,7 +292,7 @@ for(const [side,sx] of [['left',-LEG_X],['right',LEG_X]]){
 // ---- Per-side rails: flat armrest, seat rail, bottom rail ----
 for(const [side,sx,rx] of [['left',-LEG_X,-RAIL_X],['right',LEG_X,RAIL_X]]){
   // Flat armrest: caps the A from the front leg, over the back leg, to the backrest
-  const armFront = frontLegZ(ARM_CY) + W4/2 + 2;   // 2″ front overhang
+  const armFront = frontLegZ(ARM_CY) + W4/2 + 4.5;   // longer front overhang (reaches past seat)
   const armBack  = backrestZ(ARM_CY) + TH/2;        // butts into the backrest
   add('armrest-'+side,'Armrest ('+side+')','2x4','2×4 · '+(armFront-armBack).toFixed(1)+'″(flat)',
       [W4, TH, armFront-armBack], [sx, ARM_CY, (armFront+armBack)/2]);
@@ -319,7 +321,7 @@ for(const [side,sx,rx] of [['left',-LEG_X,-RAIL_X],['right',LEG_X,RAIL_X]]){
   const dirY = (backrest.y1-backrest.y0)/backrest.len;
   const dirZ = (backrest.z1-backrest.z0)/backrest.len;
   const nY = Math.sin(RCL), nZ = Math.cos(RCL), off = W4/2 + TH/2; // proud of front face
-  const sLo = 5, sHi = backrest.len - 2;
+  const sLo = 4, sHi = backrest.len - W4/2;   // first slat near the seat, top slat flush with post top
   const step = (sHi - sLo)/(BACK_SLAT_COUNT-1);
   for(let i=0;i<BACK_SLAT_COUNT;i++){
     const t  = sLo + i*step;
