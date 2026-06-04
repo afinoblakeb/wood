@@ -75,6 +75,13 @@
   #readout .pname{font:600 .95rem Georgia,serif;color:#fff}
   #readout .pdim{font-size:.78rem;color:#d2b88c;margin-top:2px}
   #readout .phint{font-size:.7rem;color:#9c8a6d;margin-top:6px}
+  #readout .ro-head{display:flex;align-items:center;gap:10px}
+  #readout .ro-key{
+    flex:0 0 auto;min-width:34px;height:34px;padding:0 6px;border-radius:8px;
+    display:grid;place-items:center;font:700 1.15rem Georgia,serif;color:#241a0e;
+    background:var(--honey);border:1px solid #e9b46a;
+  }
+  #readout .pang{font-size:.74rem;color:#cbb79a;margin-top:6px;border-top:1px solid var(--panel-line);padding-top:6px}
 
   .links{margin-top:12px;font-size:.74rem;color:#cbb79a}
   .links a{color:var(--honey);text-decoration:none}
@@ -160,14 +167,23 @@
     <select id="partsel"></select>
   </div>
 
-  <div class="group" style="margin-bottom:8px">
+  <div class="group" style="margin-bottom:6px">
     <label class="chk"><input type="checkbox" id="boltchk" checked /> Show fasteners (bolts &amp; screws)</label>
+  </div>
+  <div class="group" style="margin-bottom:8px">
+    <label class="chk"><input type="checkbox" id="letterchk" /> Show part letters on the model</label>
   </div>
 
   <div id="readout">
-    <div class="pname" id="ro-name">Whole assembly</div>
-    <div class="pdim" id="ro-dim">24 boards · all dimensional lumber</div>
-    <div class="phint" id="ro-hint">Click a board to inspect it.</div>
+    <div class="ro-head">
+      <span class="ro-key" id="ro-key">·</span>
+      <div>
+        <div class="pname" id="ro-name">Whole assembly</div>
+        <div class="pdim" id="ro-dim">25 boards · all 2×4</div>
+      </div>
+    </div>
+    <div class="pang" id="ro-ang" style="display:none"></div>
+    <div class="phint" id="ro-hint">Tap a board to see its letter, size &amp; cut angles.</div>
   </div>
 
   <div class="links">
@@ -451,7 +467,53 @@ scene.add(benchGroup);
 
 const boardMat = new THREE.MeshStandardMaterial({ color:0x9c6a39, roughness:0.78, metalness:0.02 });
 
+// ---- Part metadata: cut-list letter, short id (e.g. A·L, G3), and cut angles ----
+function keyOf(n){
+  if(n.startsWith('leg-front'))return 'A'; if(n.startsWith('leg-back'))return 'B';
+  if(n.startsWith('backrest'))return 'C';  if(n.startsWith('armrest'))return 'D';
+  if(n.startsWith('seatrail'))return 'E';  if(n.startsWith('bottomrail'))return 'F';
+  if(n.startsWith('seat-slat'))return 'G'; if(n.startsWith('back-slat'))return 'H';
+  if(n.startsWith('beam-front'))return 'J';if(n.startsWith('beam-rear'))return 'K';
+  return '?';
+}
+function shortId(n){
+  const k=keyOf(n), s=n.match(/-(\d+)$/);
+  if(s) return k+s[1];
+  if(n.endsWith('-left'))return k+'L'; if(n.endsWith('-right'))return k+'R';
+  if(n.endsWith('-center'))return k+'C';
+  return k;
+}
+function angleOf(n){
+  if(n.startsWith('leg-'))      return 'Both ends bevelled 12° (foot flat to floor, top level)';
+  if(n.startsWith('backrest'))  return 'Reclined 20° off vertical · bottom cut 20°';
+  if(n.startsWith('armrest'))   return 'Laid flat · square ends';
+  if(n.startsWith('seatrail'))  return 'On edge · rear end cut 20° (butts the post)';
+  if(n.startsWith('bottomrail'))return 'On edge · rear end cut 20° (butts the rear beam)';
+  if(n.startsWith('seat-slat')) return 'Flat · square ends';
+  if(n.startsWith('back-slat')) return 'On the posts · square ends';
+  if(n.startsWith('beam-front'))return 'On edge · square ends';
+  if(n.startsWith('beam-rear')) return 'Canted 20° · 3½″ face laminates the posts';
+  return '';
+}
+
+// ---- Floating letter labels (toggleable) ----
+const labelsGroup = new THREE.Group(); scene.add(labelsGroup); labelsGroup.visible = false;
+function roundRect(g,x,y,w,h,r){ g.beginPath(); g.moveTo(x+r,y); g.arcTo(x+w,y,x+w,y+h,r); g.arcTo(x+w,y+h,x,y+h,r); g.arcTo(x,y+h,x,y,r); g.arcTo(x,y,x+w,y,r); g.closePath(); }
+function makeLabel(text){
+  const c=document.createElement('canvas'); c.width=160; c.height=110;
+  const g=c.getContext('2d');
+  g.fillStyle='rgba(36,26,14,0.92)'; roundRect(g,6,18,148,74,18); g.fill();
+  g.strokeStyle='#d2913f'; g.lineWidth=5; roundRect(g,6,18,148,74,18); g.stroke();
+  g.fillStyle='#fff'; g.font='bold 52px Georgia,serif'; g.textAlign='center'; g.textBaseline='middle';
+  g.fillText(text,80,57);
+  const tex=new THREE.CanvasTexture(c); tex.anisotropy=4;
+  const spr=new THREE.Sprite(new THREE.SpriteMaterial({map:tex,depthTest:false,transparent:true}));
+  spr.scale.set(4.6,3.2,1);
+  return spr;
+}
+
 const parts = [];      // board meshes
+const labels = [];     // letter sprites, parallel to parts
 for(const def of partDefs){
   const mat = boardMat.clone();
   // a little per-board colour variation for realism
@@ -477,11 +539,16 @@ for(const def of partDefs){
   mesh.receiveShadow = true;
   mesh.userData = {
     partName: def.name, label: def.label, lumber: def.lumber, dim: def.dim,
+    key: keyOf(def.name), id: shortId(def.name), angles: angleOf(def.name),
     home: mesh.position.clone(), isBolt:false,
     baseColor: mesh.material.color.getHex()
   };
   benchGroup.add(mesh);
   parts.push(mesh);
+  const lbl = makeLabel(mesh.userData.id);
+  lbl.position.copy(mesh.position);
+  labelsGroup.add(lbl);
+  labels.push(lbl);
 }
 
 // ---- Fasteners: 4 carriage bolts (backrest ↔ back leg) + countersunk screw heads ----
@@ -528,8 +595,10 @@ let showBolts = true;
 
 function applyExplode(){
   const scale = 1 + explodeFrac * 1.9;
-  for(const m of parts){
+  for(let i=0;i<parts.length;i++){
+    const m = parts[i];
     m.position.copy(m.userData.home).sub(EXPLODE_CENTER).multiplyScalar(scale).add(EXPLODE_CENTER);
+    labels[i].position.copy(m.position);      // letter follows its board
   }
   for(const m of boltsGroup.children){
     m.position.copy(m.userData.home).sub(EXPLODE_CENTER).multiplyScalar(scale).add(EXPLODE_CENTER);
@@ -543,7 +612,8 @@ function setEmissive(m, on){
 
 function updateAppearance(){
   const isolating = (mode === 'individual' && selected !== 'all');
-  for(const m of parts){
+  for(let i=0;i<parts.length;i++){
+    const m = parts[i];
     const sel = m.userData.partName === selected;
     const mat = m.material;
     if(isolating && !sel){
@@ -553,29 +623,38 @@ function updateAppearance(){
       mat.transparent = false; mat.opacity = 1; mat.depthWrite = true;
       setEmissive(m, sel && selected !== 'all');
     }
+    // when isolating, only show the isolated board's letter
+    labels[i].visible = !(isolating && !sel);
   }
   // hide hardware when isolating a (non-bolt) board, else honour the checkbox
   boltsGroup.visible = showBolts && !isolating;
 }
 
 function updateReadout(){
+  const keyEl  = document.getElementById('ro-key');
   const nameEl = document.getElementById('ro-name');
   const dimEl  = document.getElementById('ro-dim');
+  const angEl  = document.getElementById('ro-ang');
   const hintEl = document.getElementById('ro-hint');
   const miniEl = document.getElementById('mini');
   if(selected === 'all'){
+    keyEl.textContent = '·';
     nameEl.textContent = 'Whole assembly';
     dimEl.textContent  = parts.length + ' boards · ' + W + '″ × ' + H + '″ × ' + D + '″';
-    hintEl.textContent = 'Click a board to inspect it.';
+    angEl.style.display = 'none';
+    hintEl.textContent = 'Tap a board to see its letter, size & cut angles.';
     miniEl.innerHTML = 'Tap <b>⚙️ Controls</b> · tap a board to inspect it';
   } else {
     const m = parts.find(p=>p.userData.partName === selected);
+    keyEl.textContent  = m.userData.id;
     nameEl.textContent = m.userData.label;
-    dimEl.textContent  = m.userData.lumber + ' · ' + m.userData.dim;
+    dimEl.textContent  = m.userData.dim;
+    angEl.style.display = m.userData.angles ? 'block' : 'none';
+    angEl.textContent  = '✂︎ ' + m.userData.angles;
     hintEl.textContent = mode === 'individual'
       ? 'Isolated. Choose “Show all parts” to reset.'
       : 'Highlighted in the assembly.';
-    miniEl.innerHTML = '<b>' + m.userData.label + '</b> · ' + m.userData.dim;
+    miniEl.innerHTML = '<b>' + m.userData.id + '</b> · ' + m.userData.label + ' · ' + m.userData.dim;
   }
 }
 
@@ -587,6 +666,7 @@ const slider = document.getElementById('explode');
 const pct = document.getElementById('explode-pct');
 const partsel = document.getElementById('partsel');
 const boltchk = document.getElementById('boltchk');
+const letterchk = document.getElementById('letterchk');
 const fab = document.getElementById('fab');
 const collapseBtn = document.getElementById('collapse');
 
@@ -616,7 +696,7 @@ fab.onclick = ()=> setCollapsed(false);
     og.label = gname;
     for(const m of parts.filter(test)){
       const o = document.createElement('option');
-      o.value = m.userData.partName; o.textContent = m.userData.label;
+      o.value = m.userData.partName; o.textContent = m.userData.id + ' · ' + m.userData.label;
       og.appendChild(o);
     }
     partsel.appendChild(og);
@@ -660,6 +740,7 @@ partsel.onchange = ()=>{
 };
 
 boltchk.onchange = ()=>{ showBolts = boltchk.checked; updateAppearance(); };
+letterchk.onchange = ()=>{ labelsGroup.visible = letterchk.checked; };
 
 /* ---------- Raycast click-to-select ---------- */
 const raycaster = new THREE.Raycaster();
