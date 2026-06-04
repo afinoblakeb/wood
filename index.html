@@ -172,6 +172,7 @@
   </div>
   <div class="group" style="margin-bottom:8px">
     <label class="chk"><input type="checkbox" id="letterchk" /> Show part letters on the model</label>
+    <label class="chk" style="margin-top:6px"><input type="checkbox" id="dimchk" /> Show dimensions &amp; edge labels</label>
   </div>
 
   <div id="readout">
@@ -540,7 +541,7 @@ for(const def of partDefs){
   mesh.userData = {
     partName: def.name, label: def.label, lumber: def.lumber, dim: def.dim,
     key: keyOf(def.name), id: shortId(def.name), angles: angleOf(def.name),
-    home: mesh.position.clone(), isBolt:false,
+    home: mesh.position.clone(), isBolt:false, def: def,
     baseColor: mesh.material.color.getHex()
   };
   benchGroup.add(mesh);
@@ -658,6 +659,106 @@ function updateReadout(){
   }
 }
 
+/* =====================================================================
+   DIMENSIONS & EDGE LABELS  (CAD-style annotation layer, toggleable)
+   ===================================================================== */
+let dimsOn = false;
+const wholeDims = new THREE.Group(); scene.add(wholeDims);
+const dimMat = new THREE.LineBasicMaterial({ color:0xffcf8a, transparent:true, depthTest:false });
+
+function fmtIn(v){
+  const e=Math.round(v*8), w=Math.floor(e/8), f=e%8;
+  return (w||!f? w:'') + ['','⅛','¼','⅜','½','⅝','¾','⅞'][f] + '″';
+}
+function txtSprite(text, {h=2.2, bg='rgba(20,15,9,0.85)', fg='#ffe9c8', bd='#d2913f'}={}){
+  const fs=40, pad=10, cv=document.createElement('canvas'), g=cv.getContext('2d');
+  g.font='bold '+fs+'px Georgia,serif';
+  cv.width=Math.ceil(g.measureText(text).width)+pad*2; cv.height=fs+pad*2;
+  g.fillStyle=bg; roundRect(g,1,1,cv.width-2,cv.height-2,12); g.fill();
+  g.strokeStyle=bd; g.lineWidth=3; roundRect(g,1,1,cv.width-2,cv.height-2,12); g.stroke();
+  g.fillStyle=fg; g.font='bold '+fs+'px Georgia,serif'; g.textAlign='center'; g.textBaseline='middle';
+  g.fillText(text, cv.width/2, cv.height/2);
+  const tex=new THREE.CanvasTexture(cv); tex.anisotropy=4;
+  const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:tex, depthTest:false, transparent:true}));
+  sp.scale.set(h*cv.width/cv.height, h, 1);
+  return sp;
+}
+function dimLine(parent, a, b){
+  parent.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(
+    [new THREE.Vector3(...a), new THREE.Vector3(...b)]), dimMat));
+}
+function nameDir(n){
+  const ax=Math.abs(n[0]),ay=Math.abs(n[1]),az=Math.abs(n[2]);
+  if(ax>=ay&&ax>=az) return n[0]>0?'right':'left';
+  if(ay>=az) return n[1]>0?'top':'bottom';
+  return n[2]>0?'front':'back';
+}
+function cutEndsBox(name, li, h){
+  const end=s=>{const p=[0,0,0]; p[li]=s*(h[li]+0.7); return p;};
+  if(name.startsWith('backrest'))  return [{pos:end(-1), text:'20°'}];
+  if(name.startsWith('seatrail')||name.startsWith('bottomrail')) return [{pos:end(-1), text:'20°'}];
+  if(name.startsWith('beam-rear')) return [{pos:[0,h[1]+0.7,0], text:'canted 20°'}];
+  return [];
+}
+function buildPartDims(m){
+  const def=m.userData.def, grp=new THREE.Group(); grp.name='__dims';
+  if(!def.verts){
+    const s=def.size, h=s.map(v=>v/2);
+    const li=s.indexOf(Math.max(...s)), o1=(li+1)%3, o2=(li+2)%3;
+    const a=[0,0,0], b=[0,0,0]; a[li]=-h[li]; b[li]=h[li];
+    a[o1]=b[o1]=-(h[o1]+1.4); a[o2]=b[o2]=-(h[o2]+1.4);
+    dimLine(grp, a, b);
+    let lab=txtSprite(fmtIn(s[li])); lab.position.set((a[0]+b[0])/2,(a[1]+b[1])/2,(a[2]+b[2])/2); grp.add(lab);
+    const cs=[0,0,0]; cs[li]=h[li]+1.4; let csL=txtSprite('1½ × 3½',{h:1.7}); csL.position.set(...cs); grp.add(csL);
+    const rot=def.rotX||0, c=Math.cos(rot), sn=Math.sin(rot);
+    for(const d of [[1,0,0],[-1,0,0],[0,1,0],[0,-1,0],[0,0,1],[0,0,-1]]){
+      const wn=[d[0], d[1]*c-d[2]*sn, d[1]*sn+d[2]*c];
+      const sp=txtSprite(nameDir(wn),{h:1.4, bg:'rgba(46,34,20,0.8)', fg:'#d8c4a0'});
+      sp.position.set(d[0]*(h[0]+0.2), d[1]*(h[1]+0.2), d[2]*(h[2]+0.2)); grp.add(sp);
+    }
+    for(const ce of cutEndsBox(def.name, li, h)){
+      const sp=txtSprite('✂ '+ce.text,{h:1.9, bg:'rgba(150,42,22,0.92)', bd:'#ffd27f'}); sp.position.set(...ce.pos); grp.add(sp);
+    }
+  } else {
+    const V=def.verts.map(v=>new THREE.Vector3(...v));
+    const avg=ix=>ix.reduce((a,i)=>a.add(V[i]),new THREE.Vector3()).multiplyScalar(1/ix.length);
+    const bot=avg([0,1,2,3]), top=avg([4,5,6,7]);
+    const off=new THREE.Vector3(-(TH/2+1.4),0,-(W4/2+1.4));
+    const a=bot.clone().add(off), b=top.clone().add(off);
+    dimLine(grp, [a.x,a.y,a.z], [b.x,b.y,b.z]);
+    let lab=txtSprite(fmtIn(top.clone().sub(bot).length())); lab.position.copy(a.clone().add(b).multiplyScalar(0.5)); grp.add(lab);
+    let cs=txtSprite('1½ × 3½',{h:1.7}); cs.position.copy(top.clone().add(new THREE.Vector3(0,1.4,0))); grp.add(cs);
+    for(const e of [bot,top]){ const sp=txtSprite('✂ 12°',{h:1.9, bg:'rgba(150,42,22,0.92)', bd:'#ffd27f'}); sp.position.copy(e.clone().add(new THREE.Vector3(TH/2+0.6,0,W4/2+0.6))); grp.add(sp); }
+    // face names from the 6 leg faces
+    for(const f of FACE_IDX){
+      const p=f.map(i=>V[i]), ctr=p.reduce((s,i)=>s.add(i),new THREE.Vector3()).multiplyScalar(1/4);
+      const e1=p[1].clone().sub(p[0]), e2=p[3].clone().sub(p[0]); const nrm=e1.cross(e2).normalize();
+      const out=ctr.clone(); if(nrm.dot(ctr)<0) nrm.negate();
+      const sp=txtSprite(nameDir([nrm.x,nrm.y,nrm.z]),{h:1.3, bg:'rgba(46,34,20,0.8)', fg:'#d8c4a0'});
+      sp.position.copy(ctr.add(nrm.multiplyScalar(0.3))); grp.add(sp);
+    }
+  }
+  m.add(grp);
+}
+function buildWholeDims(){
+  const fZ=14, bZ=-18, R=27, addW=(sp,x,y,z)=>{sp.position.set(x,y,z); wholeDims.add(sp);};
+  dimLine(wholeDims,[-24,0.4,fZ],[24,0.4,fZ]);            addW(txtSprite('48″ wide'),0,1.6,fZ);
+  dimLine(wholeDims,[R,0,bZ],[R,36.5,bZ]);                addW(txtSprite('36½″'),R+0.5,18,bZ);
+  dimLine(wholeDims,[R-3.5,0,fZ],[R-3.5,17,fZ]);          addW(txtSprite('seat 17″'),R-3.5,8.5,fZ);
+  dimLine(wholeDims,[-R,0.4,fZ],[-R,0.4,bZ]);             addW(txtSprite('~32″ deep'),-R,1.6,(fZ+bZ)/2);
+  addW(txtSprite('back 20° (≈110°)',{bg:'rgba(46,34,20,0.85)'}),0,31,bZ+2.5);
+}
+function clearDims(){
+  while(wholeDims.children.length) wholeDims.remove(wholeDims.children[0]);
+  for(const m of parts){ const d=m.getObjectByName('__dims'); if(d) m.remove(d); }
+}
+function refreshDims(){
+  clearDims();
+  if(!dimsOn) return;
+  if(selected==='all') buildWholeDims();
+  else { const m=parts.find(p=>p.userData.partName===selected); if(m) buildPartDims(m); }
+}
+
 /* ---------- UI wiring ---------- */
 const btnA = document.getElementById('m-assembled');
 const btnE = document.getElementById('m-exploded');
@@ -667,6 +768,7 @@ const pct = document.getElementById('explode-pct');
 const partsel = document.getElementById('partsel');
 const boltchk = document.getElementById('boltchk');
 const letterchk = document.getElementById('letterchk');
+const dimchk = document.getElementById('dimchk');
 const fab = document.getElementById('fab');
 const collapseBtn = document.getElementById('collapse');
 
@@ -718,7 +820,7 @@ function setMode(next){
   } else if(mode==='individual'){
     if(selected === 'all'){ selected = parts[0].userData.partName; partsel.value = selected; }
   }
-  applyExplode(); updateAppearance(); updateReadout();
+  applyExplode(); updateAppearance(); updateReadout(); refreshDims();
 }
 
 btnA.onclick = ()=>setMode('assembled');
@@ -736,11 +838,12 @@ partsel.onchange = ()=>{
   selected = partsel.value;
   if(selected!=='all' && mode!=='individual' && mode!=='exploded'){ /* keep mode */ }
   if(selected==='all' && mode==='individual'){ /* stay in individual but show all */ }
-  updateAppearance(); updateReadout();
+  updateAppearance(); updateReadout(); refreshDims();
 };
 
 boltchk.onchange = ()=>{ showBolts = boltchk.checked; updateAppearance(); };
 letterchk.onchange = ()=>{ labelsGroup.visible = letterchk.checked; };
+dimchk.onchange = ()=>{ dimsOn = dimchk.checked; refreshDims(); };
 
 /* ---------- Raycast click-to-select ---------- */
 const raycaster = new THREE.Raycaster();
@@ -759,7 +862,7 @@ renderer.domElement.addEventListener('pointerup', e=>{
   if(hits.length){
     selected = hits[0].object.userData.partName;
     partsel.value = selected;
-    updateAppearance(); updateReadout();
+    updateAppearance(); updateReadout(); refreshDims();
   }
 });
 
