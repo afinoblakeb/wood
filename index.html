@@ -161,7 +161,7 @@
   </div>
 
   <div class="group" style="margin-bottom:8px">
-    <label class="chk"><input type="checkbox" id="boltchk" checked /> Show bolts / hardware</label>
+    <label class="chk"><input type="checkbox" id="boltchk" checked /> Show fasteners (bolts &amp; screws)</label>
   </div>
 
   <div id="readout">
@@ -268,6 +268,9 @@ const backrest = (()=>{
 const backrestZ = (y) => backrest.z0 + (y - backrest.y0) *
   ((backrest.z1 - backrest.z0)/(backrest.y1 - backrest.y0));
 const RCL_N = { y: Math.sin(RCL), z: Math.cos(RCL) };  // recline (front-face) normal
+// Z of the backrest post's seat-side (front) face at height y — rails butt to this
+const postFrontZ = (y) => backrestZ(y) + (TH/2)*Math.cos(RCL);
+const SLAT_W = 2*INNER_X;                              // 45″ — slats tuck between the legs
 
 /* =====================================================================
    PART DEFINITIONS
@@ -329,12 +332,12 @@ for(const [side,sx,rx] of [['left',-LEG_X,-RAIL_X],['right',LEG_X,RAIL_X]]){
   const armBack  = backrestZ(ARM_CY) + TH/2;        // butts into the backrest
   add('armrest-'+side,'Armrest ('+side+')','2x4','2×4 · '+(armFront-armBack).toFixed(1)+'″(flat)',
       [W4, TH, armFront-armBack], [sx, ARM_CY, (armFront+armBack)/2]);
-  // Seat rail (2x4 on edge) — seat slats land on top of this
-  const srF = frontLegZ(SEAT_RAIL_CY), srB = backLegZ(SEAT_RAIL_CY);
+  // Seat rail (2x4 on edge) — seat slats land on top; rear end butts the backrest post
+  const srF = frontLegZ(SEAT_RAIL_CY), srB = postFrontZ(SEAT_RAIL_CY - W4/2);
   add('seatrail-'+side,'Seat rail ('+side+')','2x4','2×4 · '+(srF-srB).toFixed(1)+'″',
       [TH, W4, srF-srB], [rx, SEAT_RAIL_CY, (srF+srB)/2]);
-  // Bottom rail (2x4 on edge) ≈6″ off the floor
-  const brF = frontLegZ(BOT_RAIL_CY), brB = backLegZ(BOT_RAIL_CY);
+  // Bottom rail (2x4 on edge) ≈6″ off the floor; rear end butts the backrest post
+  const brF = frontLegZ(BOT_RAIL_CY), brB = postFrontZ(BOT_RAIL_CY - W4/2);
   add('bottomrail-'+side,'Bottom rail ('+side+')','2x4','2×4 · '+(brF-brB).toFixed(1)+'″',
       [TH, W4, brF-brB], [rx, BOT_RAIL_CY, (brF+brB)/2]);
 }
@@ -344,8 +347,8 @@ for(const [side,sx,rx] of [['left',-LEG_X,-RAIL_X],['right',LEG_X,RAIL_X]]){
   const frontC = 7.5, rearC = -7.5;
   const step = (frontC - rearC)/(SEAT_SLAT_COUNT-1);
   for(let i=0;i<SEAT_SLAT_COUNT;i++){
-    add('seat-slat-'+(i+1),'Seat slat '+(i+1),'2x4','2×4 · 48″',
-        [W, TH, W4], [0, SEAT_TOP - TH/2, frontC - i*step]);
+    add('seat-slat-'+(i+1),'Seat slat '+(i+1),'2x4','2×4 · 45″',
+        [SLAT_W, TH, W4], [0, SEAT_TOP - TH/2, frontC - i*step]);
   }
 }
 
@@ -360,8 +363,8 @@ for(const [side,sx,rx] of [['left',-LEG_X,-RAIL_X],['right',LEG_X,RAIL_X]]){
     const t  = sLo + i*step;
     const cy = backrest.y0 + t*dirY + off*nY;
     const cz = backrest.z0 + t*dirZ + off*nZ;
-    add('back-slat-'+(i+1),'Backrest slat '+(i+1),'2x4','2×4 · 48″',
-        [W, W4, TH], [0, cy, cz], -RCL);
+    add('back-slat-'+(i+1),'Backrest slat '+(i+1),'2x4','2×4 · 45″',
+        [SLAT_W, W4, TH], [0, cy, cz], -RCL);
   }
 }
 
@@ -477,30 +480,38 @@ for(const def of partDefs){
   parts.push(mesh);
 }
 
-// ---- Bolts / hardware (dark cylinders at the major joints) ----
+// ---- Fasteners: 4 carriage bolts (backrest ↔ back leg) + countersunk screw heads ----
+// (Frame joints use hidden pocket-hole screws → no visible heads; back slats are
+//  screwed from behind → heads hidden. Only the face-screwed joints show heads.)
 const boltsGroup = new THREE.Group();
 scene.add(boltsGroup);
-const boltMat = new THREE.MeshStandardMaterial({ color:0x23252a, roughness:0.35, metalness:0.85 });
-const boltGeo = new THREE.CylinderGeometry(0.38, 0.38, TH + 1.2, 14);
+const steelMat = new THREE.MeshStandardMaterial({ color:0x2a2d33, roughness:0.35, metalness:0.9 });
+const screwMat = new THREE.MeshStandardMaterial({ color:0x5a5e66, roughness:0.45, metalness:0.85 });
+function addHW(m){ m.castShadow=true; m.userData={isBolt:true}; boltsGroup.add(m); m.userData.home=m.position.clone(); }
 
-function addBolt(x,y,z){
-  const m = new THREE.Mesh(boltGeo, boltMat);
-  m.rotation.z = Math.PI/2;            // lie along X, through the leg
-  m.position.set(x,y,z);
-  m.castShadow = true;
-  m.userData = { isBolt:true };
-  boltsGroup.add(m);
-  m.userData.home = m.position.clone();
+// Carriage bolts: 2 per side through the laminated backrest post + back leg
+const shankGeo = new THREE.CylinderGeometry(0.27,0.27,5.0,12);
+const headGeo  = new THREE.CylinderGeometry(0.55,0.55,0.4,16);
+for(const sx of [-1,1]){
+  for(const y of [13.5, 16]){
+    const z = backLegZ(y);
+    const shank = new THREE.Mesh(shankGeo, steelMat); shank.rotation.z = Math.PI/2; shank.position.set(sx*21.6, y, z); addHW(shank);
+    const head  = new THREE.Mesh(headGeo,  steelMat); head.rotation.z  = Math.PI/2; head.position.set(sx*24.05, y, z); addHW(head);
+  }
 }
-// at both A-frames, one bolt per major joint
+
+// Countersunk screw heads on the visible face-screwed joints
+const scrGeo = new THREE.CylinderGeometry(0.22,0.16,0.18,12);
+function addScrew(x,y,z, tilt=0){ const m=new THREE.Mesh(scrGeo,screwMat); m.position.set(x,y,z); if(tilt) m.rotation.x=tilt; addHW(m); }
+// seat slats → seat rails: 2 per slat, on the seat surface over each rail
+for(let i=0;i<SEAT_SLAT_COUNT;i++){
+  const z = 7.5 - i*(15/(SEAT_SLAT_COUNT-1));
+  for(const rx of [-RAIL_X, RAIL_X]) addScrew(rx, SEAT_TOP+0.02, z);
+}
+// armrests → leg top and backrest: 2 per arm, on the armrest top
 for(const sx of [-LEG_X, LEG_X]){
-  addBolt(sx, LEG_TOP_Y,     frontLegZ(LEG_TOP_Y));    // armrest ↔ front leg
-  addBolt(sx, ARM_CY,        backrestZ(ARM_CY));       // armrest ↔ backrest
-  addBolt(sx, 15,            backLegZ(15));            // backrest ↔ back leg
-  addBolt(sx, SEAT_RAIL_CY,  frontLegZ(SEAT_RAIL_CY)); // seat rail ↔ front leg
-  addBolt(sx, SEAT_RAIL_CY,  backLegZ(SEAT_RAIL_CY));  // seat rail ↔ back leg
-  addBolt(sx, BOT_RAIL_CY,   frontLegZ(BOT_RAIL_CY));  // bottom rail / front beam ↔ front leg
-  addBolt(sx, BOT_RAIL_CY,   backLegZ(BOT_RAIL_CY));   // bottom rail / rear beam ↔ back leg
+  addScrew(sx, ARM_TOP+0.02, frontLegZ(ARM_CY));
+  addScrew(sx, ARM_TOP+0.02, backrestZ(ARM_CY));
 }
 
 /* =====================================================================
