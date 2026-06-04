@@ -253,17 +253,21 @@ function strut(x, z0,y0, z1,y1, xThick, profW){
 
 // Separate reclined backrest: lower end bolts behind the back leg just
 // below the seat, then reclines back to full height.
-const BACKREST_X = RAIL_X;   // bolted to the inboard face of the back leg (offset in X,
-                             // so it can overlap the leg in profile without clashing)
+// Backrest posts: rotated 90° so the 3.5" face takes the slats; mounted inboard of the
+// back legs and extended straight down to the (canted) rear cross beam.
+const BACKREST_X = INNER_X - W4/2;            // 20.75 — 3.5" wide post, outer face on leg inner face
+const SEAT_REF_Y = 14;                        // backrest line crosses the back leg here (bolted)
+const REAR_BEAM_Y = BOT_RAIL_CY;              // posts run straight down to the beam at rail height
 const backrest = (()=>{
-  const y0 = 14;
-  const z0 = backLegZ(y0);    // shares the back-leg line at the seat, so the lowest slat
-  const y1 = H;               // meets the seat back (closes the lumbar gap)
-  const z1 = z0 - (y1 - y0)*Math.tan(RCL);
+  const ref = backLegZ(SEAT_REF_Y);
+  const zAt = (y)=> ref - (y - SEAT_REF_Y)*Math.tan(RCL);
+  const y0 = REAR_BEAM_Y, z0 = zAt(y0);       // bottom (lands on the rear beam)
+  const y1 = H,           z1 = zAt(y1);       // top
   return { y0, z0, y1, z1, len: Math.hypot(z1-z0, y1-y0) };
 })();
 const backrestZ = (y) => backrest.z0 + (y - backrest.y0) *
   ((backrest.z1 - backrest.z0)/(backrest.y1 - backrest.y0));
+const RCL_N = { y: Math.sin(RCL), z: Math.cos(RCL) };  // recline (front-face) normal
 
 /* =====================================================================
    PART DEFINITIONS
@@ -284,7 +288,11 @@ for(const [side,sx] of [['left',-LEG_X],['right',LEG_X]]){
   s = strut(sx, -FOOT_HALF,0, backLegZ(LEG_TOP_Y),LEG_TOP_Y, TH,W4);
   add('leg-back-'+side,'Back leg ('+side+')','2x4','2×4 · '+legLen.toFixed(1)+'″',
       s.size, s.pos, s.rotX);
-  s = strut(Math.sign(sx)*BACKREST_X, backrest.z0,backrest.y0, backrest.z1,backrest.y1, TH,W4);
+}
+
+// ---- Backrest posts (3): left, centre, right — turned so the 3.5" face takes the slats ----
+for(const [side,bx] of [['left',-BACKREST_X],['center',0],['right',BACKREST_X]]){
+  const s = strut(bx, backrest.z0,backrest.y0, backrest.z1,backrest.y1, W4,TH);
   add('backrest-'+side,'Backrest post ('+side+')','2x4','2×4 · '+backrest.len.toFixed(1)+'″(reclined '+BACK_RECLINE_DEG+'°)',
       s.size, s.pos, s.rotX);
 }
@@ -320,8 +328,8 @@ for(const [side,sx,rx] of [['left',-LEG_X,-RAIL_X],['right',LEG_X,RAIL_X]]){
 {
   const dirY = (backrest.y1-backrest.y0)/backrest.len;
   const dirZ = (backrest.z1-backrest.z0)/backrest.len;
-  const nY = Math.sin(RCL), nZ = Math.cos(RCL), off = W4/2 + TH/2; // proud of front face
-  const sLo = 4, sHi = backrest.len - W4/2;   // first slat near the seat, top slat flush with post top
+  const nY = Math.sin(RCL), nZ = Math.cos(RCL), off = TH; // proud of the 3.5" front face (post 1.5" deep)
+  const sLo = 11, sHi = backrest.len - W4/2;  // slats span from just above the seat to the post top
   const step = (sHi - sLo)/(BACK_SLAT_COUNT-1);
   for(let i=0;i<BACK_SLAT_COUNT;i++){
     const t  = sLo + i*step;
@@ -335,8 +343,10 @@ for(const [side,sx,rx] of [['left',-LEG_X,-RAIL_X],['right',LEG_X,RAIL_X]]){
 // ---- Two bottom cross beams (front + rear) joining the A-frames ----
 add('beam-front','Bottom cross beam – front','2x4','2×4 · 45″',
     [BEAM_LEN, W4, TH], [0, BOT_RAIL_CY, frontLegZ(BOT_RAIL_CY)]);
-add('beam-rear','Bottom cross beam – rear','2x4','2×4 · 45″',
-    [BEAM_LEN, W4, TH], [0, BOT_RAIL_CY, backLegZ(BOT_RAIL_CY)]);
+// Rear beam: attached to the bottom RAILS (pulled toward centre, off the back legs) and
+// CANTED to the recline so its 3.5" face meets the three posts' 3.5" faces flush.
+add('beam-rear','Bottom cross beam – rear (canted, receives backrest posts)','2x4','2×4 · 45″',
+    [BEAM_LEN, W4, TH], [0, backrest.y0 - TH*RCL_N.y, backrest.z0 - TH*RCL_N.z], -RCL);
 
 /* =====================================================================
    THREE.JS SCENE
