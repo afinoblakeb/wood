@@ -257,7 +257,8 @@ function strut(x, z0,y0, z1,y1, xThick, profW){
 // back legs and extended straight down to the (canted) rear cross beam.
 const BACKREST_X = INNER_X - W4/2;            // 20.75 — 3.5" wide post, outer face on leg inner face
 const SEAT_REF_Y = 14;                        // backrest line crosses the back leg here (bolted)
-const REAR_BEAM_Y = BOT_RAIL_CY;              // posts run straight down to the beam at rail height
+const BEAM_Y = BOT_RAIL_CY;                   // rear beam centre height (= bottom-rail height)
+const REAR_BEAM_Y = BEAM_Y + (W4/2)*Math.cos(RCL); // post bottoms land flush on the beam's top face
 const backrest = (()=>{
   const ref = backLegZ(SEAT_REF_Y);
   const zAt = (y)=> ref - (y - SEAT_REF_Y)*Math.tan(RCL);
@@ -336,8 +337,8 @@ for(const [side,sx,rx] of [['left',-LEG_X,-RAIL_X],['right',LEG_X,RAIL_X]]){
   const srF = frontLegZ(SEAT_RAIL_CY), srB = postFrontZ(SEAT_RAIL_CY - W4/2);
   add('seatrail-'+side,'Seat rail ('+side+')','2x4','2×4 · '+(srF-srB).toFixed(1)+'″',
       [TH, W4, srF-srB], [rx, SEAT_RAIL_CY, (srF+srB)/2]);
-  // Bottom rail (2x4 on edge) ≈6″ off the floor; rear end butts the backrest post
-  const brF = frontLegZ(BOT_RAIL_CY), brB = postFrontZ(BOT_RAIL_CY - W4/2);
+  // Bottom rail (2x4 on edge) ≈6″ off the floor; rear end butts the rear cross beam
+  const brF = frontLegZ(BOT_RAIL_CY), brB = backrestZ(BEAM_Y) + (TH/2)*Math.cos(RCL);
   add('bottomrail-'+side,'Bottom rail ('+side+')','2x4','2×4 · '+(brF-brB).toFixed(1)+'″',
       [TH, W4, brF-brB], [rx, BOT_RAIL_CY, (brF+brB)/2]);
 }
@@ -371,10 +372,10 @@ for(const [side,sx,rx] of [['left',-LEG_X,-RAIL_X],['right',LEG_X,RAIL_X]]){
 // ---- Two bottom cross beams (front + rear) joining the A-frames ----
 add('beam-front','Bottom cross beam – front','2x4','2×4 · 45″',
     [BEAM_LEN, W4, TH], [0, BOT_RAIL_CY, frontLegZ(BOT_RAIL_CY)]);
-// Rear beam: attached to the bottom RAILS (pulled toward centre, off the back legs) and
-// CANTED to the recline so its 3.5" face meets the three posts' 3.5" faces flush.
-add('beam-rear','Bottom cross beam – rear (canted, receives backrest posts)','2x4','2×4 · 45″',
-    [BEAM_LEN, W4, TH], [0, backrest.y0 - TH*RCL_N.y, backrest.z0 - TH*RCL_N.z], -RCL);
+// Rear beam: in line with the posts (their bottom ends land flush on its top), CANTED to
+// the recline, and butted by the two bottom rails (so it ties them together).
+add('beam-rear','Bottom cross beam – rear (canted; receives the posts, butts the bottom rails)','2x4','2×4 · 45″',
+    [BEAM_LEN, W4, TH], [0, BEAM_Y, backrestZ(BEAM_Y)], -RCL);
 
 /* =====================================================================
    THREE.JS SCENE
