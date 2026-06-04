@@ -258,7 +258,7 @@ function strut(x, z0,y0, z1,y1, xThick, profW){
 const BACKREST_X = INNER_X - W4/2;            // 20.75 — 3.5" wide post, outer face on leg inner face
 const SEAT_REF_Y = 14;                        // backrest line crosses the back leg here (bolted)
 const BEAM_Y = BOT_RAIL_CY;                   // rear beam centre height (= bottom-rail height)
-const REAR_BEAM_Y = BEAM_Y + (W4/2)*Math.cos(RCL); // post bottoms land flush on the beam's top face
+const REAR_BEAM_Y = BEAM_Y + TH*Math.sin(RCL) - (W4/2)*Math.cos(RCL); // posts run down to the beam's lower edge (face-mounted)
 const backrest = (()=>{
   const ref = backLegZ(SEAT_REF_Y);
   const zAt = (y)=> ref - (y - SEAT_REF_Y)*Math.tan(RCL);
@@ -337,8 +337,8 @@ for(const [side,sx,rx] of [['left',-LEG_X,-RAIL_X],['right',LEG_X,RAIL_X]]){
   const srF = frontLegZ(SEAT_RAIL_CY), srB = postFrontZ(SEAT_RAIL_CY - W4/2);
   add('seatrail-'+side,'Seat rail ('+side+')','2x4','2×4 · '+(srF-srB).toFixed(1)+'″',
       [TH, W4, srF-srB], [rx, SEAT_RAIL_CY, (srF+srB)/2]);
-  // Bottom rail (2x4 on edge) ≈6″ off the floor; rear end butts the rear cross beam
-  const brF = frontLegZ(BOT_RAIL_CY), brB = backrestZ(BEAM_Y) + (TH/2)*Math.cos(RCL);
+  // Bottom rail (2x4 on edge) ≈6″ off the floor; rear end butts the rear cross beam's front face
+  const brF = frontLegZ(BOT_RAIL_CY), brB = backrestZ(BEAM_Y) + (3*TH/2)*Math.cos(RCL);
   add('bottomrail-'+side,'Bottom rail ('+side+')','2x4','2×4 · '+(brF-brB).toFixed(1)+'″',
       [TH, W4, brF-brB], [rx, BOT_RAIL_CY, (brF+brB)/2]);
 }
@@ -358,7 +358,8 @@ for(const [side,sx,rx] of [['left',-LEG_X,-RAIL_X],['right',LEG_X,RAIL_X]]){
   const dirY = (backrest.y1-backrest.y0)/backrest.len;
   const dirZ = (backrest.z1-backrest.z0)/backrest.len;
   const nY = Math.sin(RCL), nZ = Math.cos(RCL), off = TH; // proud of the 3.5" front face (post 1.5" deep)
-  const sLo = 11, sHi = backrest.len - W4/2;  // slats span from just above the seat to the post top
+  // start the lowest slat ~2" above the seat (robust to post length), top slat flush with the post top
+  const sLo = (SEAT_TOP + 2 - backrest.y0 - off*nY)/dirY, sHi = backrest.len - W4/2;
   const step = (sHi - sLo)/(BACK_SLAT_COUNT-1);
   for(let i=0;i<BACK_SLAT_COUNT;i++){
     const t  = sLo + i*step;
@@ -372,10 +373,12 @@ for(const [side,sx,rx] of [['left',-LEG_X,-RAIL_X],['right',LEG_X,RAIL_X]]){
 // ---- Two bottom cross beams (front + rear) joining the A-frames ----
 add('beam-front','Bottom cross beam – front','2x4','2×4 · 45″',
     [BEAM_LEN, W4, TH], [0, BOT_RAIL_CY, frontLegZ(BOT_RAIL_CY)]);
-// Rear beam: in line with the posts (their bottom ends land flush on its top), CANTED to
-// the recline, and butted by the two bottom rails (so it ties them together).
-add('beam-rear','Bottom cross beam – rear (canted; receives the posts, butts the bottom rails)','2x4','2×4 · 45″',
-    [BEAM_LEN, W4, TH], [0, BEAM_Y, backrestZ(BEAM_Y)], -RCL);
+// Rear beam: pulled IN toward the seat so its 3.5" face laminates flat against the posts'
+// 3.5" faces; CANTED to the recline; butted on its front by the two bottom rails.
+const beamCZ = backrestZ(BEAM_Y) + TH*Math.cos(RCL);   // beam centre Z (in front of the post line)
+const beamCY = BEAM_Y + TH*Math.sin(RCL);              // beam centre Y
+add('beam-rear','Bottom cross beam – rear (canted; posts'+"'"+' faces mount flush to its 3.5″ face)','2x4','2×4 · 45″',
+    [BEAM_LEN, W4, TH], [0, beamCY, beamCZ], -RCL);
 
 /* =====================================================================
    THREE.JS SCENE
