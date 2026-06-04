@@ -278,16 +278,41 @@ const partDefs = [];
 const add = (name,label,lumber,dim,size,pos,rotX=0)=>
   partDefs.push({name,label,lumber,dim,size,pos,rotX});
 
+// Quad faces of the 8-vertex angled boards (see legVerts ordering)
+const FACE_IDX = [[0,1,2,3],[4,5,6,7],[0,1,5,4],[3,2,6,7],[0,3,7,4],[1,2,6,5]];
+const addVerts = (name,label,lumber,dim,verts,pos)=>
+  partDefs.push({name,label,lumber,dim,verts,pos});
+
+// A tilted board whose two ends are cut by HORIZONTAL planes (y=yBot, y=yTop),
+// so a splayed leg seats flat on the floor and presents a level top for the
+// flat armrest. Cross-section hx (across X) × hp (in the side profile).
+// Returns 8 world vertices: [0..3] bottom, [4..7] top, each ordered
+// (−p,−x)(−p,+x)(+p,+x)(+p,−x).
+function legVerts(xc, zFoot, zTop, yBot, yTop, hx, hp){
+  const az=zTop-zFoot, ay=yTop-yBot, al=Math.hypot(az,ay);
+  const uz=az/al, uy=ay/al;          // axis unit in (z,y)
+  const Pz=uy, Py=-uz;               // profile direction ⟂ axis (in z,y)
+  const out=[];
+  for(const Y of [yBot,yTop])
+    for(const [sp,sx] of [[-1,-1],[-1,1],[1,1],[1,-1]]){
+      const Bz=zFoot+sp*hp*Pz, By=yBot+sp*hp*Py;
+      out.push([xc+sx*hx, Y, Bz + ((Y-By)/uy)*uz]);
+    }
+  return out;
+}
+function addLeg(name,label, xc, zFoot, zTop){
+  const v = legVerts(xc, zFoot, zTop, 0, LEG_TOP_Y, TH/2, W4/2);
+  const c = v.reduce((a,p)=>[a[0]+p[0],a[1]+p[1],a[2]+p[2]],[0,0,0]).map(s=>s/8);
+  addVerts(name,label,'2x4','2×4 · '+legLen.toFixed(1)+'″ (ends cut to floor & armrest)',
+           v.map(p=>[p[0]-c[0],p[1]-c[1],p[2]-c[2]]), c);
+}
+
 const legLen = Math.hypot(frontLegZ(LEG_TOP_Y)-FOOT_HALF, LEG_TOP_Y);
 
 // ---- Symmetric A legs + separate backrest (per side) ----
 for(const [side,sx] of [['left',-LEG_X],['right',LEG_X]]){
-  let s = strut(sx, FOOT_HALF,0, frontLegZ(LEG_TOP_Y),LEG_TOP_Y, TH,W4);
-  add('leg-front-'+side,'Front leg ('+side+')','2x4','2×4 · '+legLen.toFixed(1)+'″',
-      s.size, s.pos, s.rotX);
-  s = strut(sx, -FOOT_HALF,0, backLegZ(LEG_TOP_Y),LEG_TOP_Y, TH,W4);
-  add('leg-back-'+side,'Back leg ('+side+')','2x4','2×4 · '+legLen.toFixed(1)+'″',
-      s.size, s.pos, s.rotX);
+  addLeg('leg-front-'+side,'Front leg ('+side+')', sx, FOOT_HALF,  frontLegZ(LEG_TOP_Y));
+  addLeg('leg-back-'+side, 'Back leg ('+side+')',  sx, -FOOT_HALF, backLegZ(LEG_TOP_Y));
 }
 
 // ---- Backrest posts (3): left, centre, right — turned so the 3.5" face takes the slats ----
@@ -421,10 +446,23 @@ const boardMat = new THREE.MeshStandardMaterial({ color:0x9c6a39, roughness:0.78
 
 const parts = [];      // board meshes
 for(const def of partDefs){
-  const geo = new THREE.BoxGeometry(def.size[0], def.size[1], def.size[2]);
   const mat = boardMat.clone();
   // a little per-board colour variation for realism
   mat.color.offsetHSL(0, (Math.random()-0.5)*0.03, (Math.random()-0.5)*0.05);
+  let geo;
+  if(def.verts){                       // angled-end board (legs)
+    const pos = [];
+    for(const f of FACE_IDX){
+      const q = f.map(i=>def.verts[i]);
+      for(const [a,b,c] of [[0,1,2],[0,2,3]]) pos.push(...q[a],...q[b],...q[c]);
+    }
+    geo = new THREE.BufferGeometry();
+    geo.setAttribute('position', new THREE.Float32BufferAttribute(pos,3));
+    geo.computeVertexNormals();
+    mat.side = THREE.DoubleSide;
+  } else {
+    geo = new THREE.BoxGeometry(def.size[0], def.size[1], def.size[2]);
+  }
   const mesh = new THREE.Mesh(geo, mat);
   mesh.position.set(def.pos[0], def.pos[1], def.pos[2]);
   if(def.rotX) mesh.rotation.x = def.rotX;
