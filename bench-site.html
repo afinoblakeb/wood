@@ -1,0 +1,940 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>A‑Frame Bench · Sloped + Tree‑Anchored Site Install — 3D Model</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Ctext y='14' font-size='14'%3E%F0%9F%AA%91%3C/text%3E%3C/svg%3E" />
+<style>
+  :root{
+    --panel-bg: rgba(31,24,16,.86);
+    --panel-line:#5c4a33;
+    --cream:#f7f1e6;
+    --honey:#d2913f;
+    --honey-d:#a96f27;
+    --accent:#3f7d4e;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%;margin:0}
+  body{
+    font-family:"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    background:#0e0c09;color:var(--cream);overflow:hidden;
+  }
+  #app{position:fixed;inset:0}
+  canvas{display:block}
+
+  /* ---------- Control panel ---------- */
+  #ui{
+    position:fixed;top:14px;left:14px;width:290px;max-width:calc(100vw - 28px);
+    background:var(--panel-bg);border:1px solid var(--panel-line);
+    border-radius:12px;backdrop-filter:blur(6px);
+    box-shadow:0 8px 30px rgba(0,0,0,.45);
+    padding:14px 14px 16px;z-index:10;
+    max-height:calc(100vh - 28px);overflow:auto;
+  }
+  #ui .titlebar{display:flex;align-items:flex-start;justify-content:space-between;gap:8px}
+  #ui h1{
+    font:700 1.05rem/1.2 Georgia,serif;margin:0 0 2px;color:#fff;
+    display:flex;align-items:center;gap:.4rem;
+  }
+  .icon-btn{
+    flex:0 0 auto;width:30px;height:30px;padding:0;border-radius:8px;
+    font-size:1.1rem;line-height:1;display:grid;place-items:center;
+  }
+  #ui .sub{font-size:.72rem;color:#cbb79a;margin:0 0 12px}
+  .group{margin:0 0 14px}
+  .group > .lbl{
+    font-size:.68rem;text-transform:uppercase;letter-spacing:.08em;
+    color:#cbb79a;margin:0 0 6px;font-weight:600;
+  }
+  .modes{display:flex;gap:6px}
+  .modes button{flex:1}
+  button{
+    font:600 .8rem/1 inherit;color:var(--cream);
+    background:#3a2c1c;border:1px solid var(--panel-line);
+    padding:8px 6px;border-radius:8px;cursor:pointer;transition:.12s;
+  }
+  button:hover{background:#4a3825;border-color:var(--honey)}
+  button.active{background:var(--honey);border-color:var(--honey);color:#241a0e}
+  input[type=range]{width:100%;accent-color:var(--honey);cursor:pointer}
+  .rowflex{display:flex;align-items:center;justify-content:space-between;gap:8px}
+  .pct{font-variant-numeric:tabular-nums;font-size:.8rem;color:#e7d6b6;min-width:42px;text-align:right}
+  select{
+    width:100%;font:inherit;font-size:.82rem;color:var(--cream);
+    background:#3a2c1c;border:1px solid var(--panel-line);
+    border-radius:8px;padding:8px;cursor:pointer;
+  }
+  label.chk{display:flex;align-items:center;gap:8px;font-size:.82rem;color:#e7d6b6;cursor:pointer;user-select:none}
+  label.chk input{accent-color:var(--honey);width:16px;height:16px;cursor:pointer}
+
+  /* ---------- Selected part readout ---------- */
+  #readout{
+    margin-top:4px;background:#241a0e;border:1px solid var(--panel-line);
+    border-radius:8px;padding:10px 12px;
+  }
+  #readout .pname{font:600 .95rem Georgia,serif;color:#fff}
+  #readout .pdim{font-size:.78rem;color:#d2b88c;margin-top:2px}
+  #readout .phint{font-size:.7rem;color:#9c8a6d;margin-top:6px}
+  #readout .ro-head{display:flex;align-items:center;gap:10px}
+  #readout .ro-key{
+    flex:0 0 auto;min-width:34px;height:34px;padding:0 6px;border-radius:8px;
+    display:grid;place-items:center;font:700 1.15rem Georgia,serif;color:#241a0e;
+    background:var(--honey);border:1px solid #e9b46a;
+  }
+  #readout .pang{font-size:.74rem;color:#cbb79a;margin-top:6px;border-top:1px solid var(--panel-line);padding-top:6px}
+
+  .links{margin-top:12px;font-size:.74rem;color:#cbb79a}
+  .links a{color:var(--honey);text-decoration:none}
+  .links a:hover{text-decoration:underline}
+
+  /* ---------- Help / hint badge ---------- */
+  #hint{
+    position:fixed;bottom:12px;right:14px;z-index:10;
+    font-size:.72rem;color:#cbb79a;background:var(--panel-bg);
+    border:1px solid var(--panel-line);border-radius:8px;padding:7px 11px;
+    backdrop-filter:blur(6px);
+  }
+  #loading{
+    position:fixed;inset:0;display:grid;place-items:center;z-index:20;
+    background:#0e0c09;color:#cbb79a;font:600 1rem Georgia,serif;
+  }
+
+  /* ---------- Collapsible panel (mobile-friendly) ---------- */
+  #fab{
+    position:fixed;top:14px;left:14px;z-index:12;display:none;
+    align-items:center;gap:7px;cursor:pointer;
+    background:var(--panel-bg);border:1px solid var(--panel-line);
+    color:var(--cream);border-radius:10px;padding:10px 13px;
+    font:600 .85rem inherit;backdrop-filter:blur(6px);
+    box-shadow:0 6px 20px rgba(0,0,0,.4);
+  }
+  #fab:hover{border-color:var(--honey)}
+  body.ui-collapsed #ui{display:none}
+  body.ui-collapsed #fab{display:flex}
+
+  /* compact selection pill, only while collapsed */
+  #mini{
+    position:fixed;left:50%;transform:translateX(-50%);bottom:14px;z-index:11;
+    display:none;max-width:calc(100vw - 28px);
+    background:var(--panel-bg);border:1px solid var(--panel-line);
+    border-radius:999px;padding:8px 15px;backdrop-filter:blur(6px);
+    font-size:.8rem;color:#e7d6b6;text-align:center;
+    box-shadow:0 6px 20px rgba(0,0,0,.4);
+  }
+  #mini b{color:#fff;font-weight:600}
+  body.ui-collapsed #mini{display:block}
+
+  @media (max-width:640px){
+    #ui{width:calc(100vw - 28px);max-height:calc(100dvh - 28px)}
+    #hint{display:none}
+  }
+</style>
+</head>
+<body>
+<div id="app"></div>
+
+<div id="loading">Loading 3D model…</div>
+
+<button id="fab" title="Show controls">⚙️ <span>Controls</span></button>
+<div id="mini">Tap <b>⚙️ Controls</b> to open the menu</div>
+
+<div id="ui">
+  <div class="titlebar">
+    <h1>🪑 A‑Frame Bench · Site Install</h1>
+    <button id="collapse" class="icon-btn" title="Hide panel" aria-label="Hide panel">✕</button>
+  </div>
+  <p class="sub">SITE: reclined 5° on a 4″ slope · bottom rails extended as tree tails · all 2×4</p>
+
+  <div class="group">
+    <div class="lbl">Render mode</div>
+    <div class="modes">
+      <button id="m-assembled" class="active">Assembled</button>
+      <button id="m-exploded">Exploded</button>
+      <button id="m-individual">Individual</button>
+    </div>
+  </div>
+
+  <div class="group">
+    <div class="rowflex">
+      <span class="lbl" style="margin:0">Explode</span>
+      <span class="pct" id="explode-pct">0%</span>
+    </div>
+    <input type="range" id="explode" min="0" max="100" value="0" />
+  </div>
+
+  <div class="group">
+    <div class="lbl">Part selector</div>
+    <select id="partsel"></select>
+  </div>
+
+  <div class="group" style="margin-bottom:6px">
+    <label class="chk"><input type="checkbox" id="boltchk" checked /> Show fasteners (bolts &amp; screws)</label>
+  </div>
+  <div class="group" style="margin-bottom:8px">
+    <label class="chk"><input type="checkbox" id="letterchk" /> Show part letters on the model</label>
+    <label class="chk" style="margin-top:6px"><input type="checkbox" id="dimchk" /> Show dimensions &amp; edge labels</label>
+  </div>
+
+  <div id="readout">
+    <div class="ro-head">
+      <span class="ro-key" id="ro-key">·</span>
+      <div>
+        <div class="pname" id="ro-name">Whole assembly</div>
+        <div class="pdim" id="ro-dim">25 boards · all 2×4</div>
+      </div>
+    </div>
+    <div class="pang" id="ro-ang" style="display:none"></div>
+    <div class="phint" id="ro-hint">Tap a board to see its letter, size &amp; cut angles.</div>
+  </div>
+
+  <div class="links">
+    ← <a href="index.html">Original (flat‑ground) design</a> ·
+    📋 <a href="projects/2x4-garden-bench.html">Cut list →</a>
+  </div>
+</div>
+
+<div id="hint">Drag to rotate · scroll to zoom · right-drag to pan</div>
+
+<script type="importmap">
+{
+  "imports":{
+    "three":"https://unpkg.com/three@0.160.0/build/three.module.js",
+    "three/addons/":"https://unpkg.com/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+/* =====================================================================
+   PARAMETRIC DIMENSIONS  (all values in INCHES; 1 unit = 1 inch)
+
+   Structure — two SYMMETRIC A-FRAME sides (these are the LEGS):
+     • front leg + back leg are mirror images; they splay from the floor
+       and lean inward to meet near the top, where a flat ARMREST caps them.
+     • a SEAT RAIL and a BOTTOM RAIL are the crossbars of the "A".
+   The BACKREST is a SEPARATE reclined post that bolts to the back leg and
+   rises to full height — it is NOT a leg and carries no seat load.
+   The two A-frames are joined left-to-right by seat slats, back slats, and
+   two bottom cross beams (front + rear).
+   ===================================================================== */
+const W = 48;          // overall width  (left-right, X)
+const H = 36.5;        // overall height (Y) — top of backrest
+const D = 30.5;        // overall depth  (front-back, Z) — approx target
+const SEAT_TOP = 17;   // top of seat slats
+const ARM_TOP  = 25;   // top of armrests
+const LEG_SPLAY_DEG    = 12;  // each leg's lean from vertical (SYMMETRIC A)
+const BACK_RECLINE_DEG = 20;  // separate backrest recline off vertical (≈110° seat-to-back)
+const FOOT_HALF = 12;         // half the base spread: front foot +12, back foot −12 (24″ base)
+const BOT_RAIL_CY = 7.5;      // bottom rail centre ≈ 6″ off the floor
+const SEAT_SLAT_COUNT = 5;
+const BACK_SLAT_COUNT = 5;
+
+// Actual (dressed) lumber cross-sections — NOT nominal
+const LUMBER = {
+  '2x6': { a:1.5, b:5.5 },
+  '2x4': { a:1.5, b:3.5 },
+  '2x2': { a:1.5, b:1.5 },
+};
+const TH = LUMBER['2x4'].a;   // 1.5  (2x thickness)
+const W4 = LUMBER['2x4'].b;   // 3.5  (2x4 width)
+
+// Derived geometry helpers ------------------------------------------------
+const rad = THREE.MathUtils.degToRad;
+const SPL = rad(LEG_SPLAY_DEG);
+const RCL = rad(BACK_RECLINE_DEG);
+const TAN_S = Math.tan(SPL);
+
+const LEG_X    = W/2 - TH/2;    // 23.25  centre X of legs (1.5 thick → outer face ±24)
+const INNER_X  = W/2 - TH;      // 22.5   inner face of legs
+const RAIL_X   = INNER_X - TH/2;// 21.75  centre X of side-frame rails (inboard of legs)
+const BEAM_LEN = 2*INNER_X;     // 45     cross-beam length between leg inner faces
+
+const LEG_TOP_Y    = ARM_TOP - TH;         // 23.5  legs end here (capped by armrest)
+const ARM_CY       = ARM_TOP - TH/2;       // 24.25 flat armrest centre Y
+const SEAT_RAIL_CY = SEAT_TOP - TH - W4/2; // 13.75 seat rail (on edge), top = slat bottom
+
+// Symmetric A legs: feet at ±FOOT_HALF, each leans inward toward the top
+const frontLegZ = (y) =>  FOOT_HALF - y*TAN_S;   // front foot forward (+z), leans back
+const backLegZ  = (y) => -FOOT_HALF + y*TAN_S;   // back foot rear (−z), leans forward (mirror)
+
+// Build a board that runs between two points in the Z-Y plane (angled
+// legs/posts). xThick = thickness across X, profW = width seen in profile.
+function strut(x, z0,y0, z1,y1, xThick, profW){
+  const dz = z1-z0, dy = y1-y0;
+  return { size:[xThick, Math.hypot(dz,dy), profW],
+           pos:[x, (y0+y1)/2, (z0+z1)/2], rotX: Math.atan2(dz,dy) };
+}
+
+// Separate reclined backrest: lower end bolts behind the back leg just
+// below the seat, then reclines back to full height.
+// Backrest posts: rotated 90° so the 3.5" face takes the slats; mounted inboard of the
+// back legs and extended straight down to the (canted) rear cross beam.
+const BACKREST_X = INNER_X - W4/2;            // 20.75 — 3.5" wide post, outer face on leg inner face
+const SEAT_REF_Y = 14;                        // backrest line crosses the back leg here (bolted)
+const BEAM_Y = BOT_RAIL_CY;                   // rear beam centre height (= bottom-rail height)
+const REAR_BEAM_Y = BEAM_Y + TH*Math.sin(RCL) - (W4/2)*Math.cos(RCL); // posts run down to the beam's lower edge (face-mounted)
+const backrest = (()=>{
+  const ref = backLegZ(SEAT_REF_Y);
+  const zAt = (y)=> ref - (y - SEAT_REF_Y)*Math.tan(RCL);
+  const y0 = REAR_BEAM_Y, z0 = zAt(y0);       // bottom (lands on the rear beam)
+  const y1 = H,           z1 = zAt(y1);       // top
+  return { y0, z0, y1, z1, len: Math.hypot(z1-z0, y1-y0) };
+})();
+const backrestZ = (y) => backrest.z0 + (y - backrest.y0) *
+  ((backrest.z1 - backrest.z0)/(backrest.y1 - backrest.y0));
+const RCL_N = { y: Math.sin(RCL), z: Math.cos(RCL) };  // recline (front-face) normal
+// Z of the backrest post's seat-side (front) face at height y — rails butt to this
+const postFrontZ = (y) => backrestZ(y) + (TH/2)*Math.cos(RCL);
+const SLAT_W = 2*INNER_X;                              // 45″ — slats tuck between the legs
+
+/* =====================================================================
+   PART DEFINITIONS
+   Each entry becomes one named BoxGeometry mesh (kept separate).
+   size:[x,y,z]  pos:[x,y,z]  rotX: rotation about X (for angled parts)
+   ===================================================================== */
+const partDefs = [];
+const add = (name,label,lumber,dim,size,pos,rotX=0)=>
+  partDefs.push({name,label,lumber,dim,size,pos,rotX});
+
+// Quad faces of the 8-vertex angled boards (see legVerts ordering)
+const FACE_IDX = [[0,1,2,3],[4,5,6,7],[0,1,5,4],[3,2,6,7],[0,3,7,4],[1,2,6,5]];
+const addVerts = (name,label,lumber,dim,verts,pos)=>
+  partDefs.push({name,label,lumber,dim,verts,pos});
+
+// A tilted board whose two ends are cut by HORIZONTAL planes (y=yBot, y=yTop),
+// so a splayed leg seats flat on the floor and presents a level top for the
+// flat armrest. Cross-section hx (across X) × hp (in the side profile).
+// Returns 8 world vertices: [0..3] bottom, [4..7] top, each ordered
+// (−p,−x)(−p,+x)(+p,+x)(+p,−x).
+function legVerts(xc, zFoot, zTop, yBot, yTop, hx, hp){
+  const az=zTop-zFoot, ay=yTop-yBot, al=Math.hypot(az,ay);
+  const uz=az/al, uy=ay/al;          // axis unit in (z,y)
+  const Pz=uy, Py=-uz;               // profile direction ⟂ axis (in z,y)
+  const out=[];
+  for(const Y of [yBot,yTop])
+    for(const [sp,sx] of [[-1,-1],[-1,1],[1,1],[1,-1]]){
+      const Bz=zFoot+sp*hp*Pz, By=yBot+sp*hp*Py;
+      out.push([xc+sx*hx, Y, Bz + ((Y-By)/uy)*uz]);
+    }
+  return out;
+}
+function addLeg(name,label, xc, zFoot, zTop, footY=0){
+  const v = legVerts(xc, zFoot, zTop, footY, LEG_TOP_Y, TH/2, W4/2);
+  const c = v.reduce((a,p)=>[a[0]+p[0],a[1]+p[1],a[2]+p[2]],[0,0,0]).map(s=>s/8);
+  const L = Math.hypot(zTop-zFoot, LEG_TOP_Y-footY);
+  addVerts(name,label,'2x4','2×4 · '+L.toFixed(1)+'″ (site-cut foot)',
+           v.map(p=>[p[0]-c[0],p[1]-c[1],p[2]-c[2]]), c);
+}
+
+const legLen = Math.hypot(frontLegZ(LEG_TOP_Y)-FOOT_HALF, LEG_TOP_Y);
+
+// ---- SITE INSTALL: whole bench reclined on a slope, anchored to a tree ----
+const SEAT_TILT = rad(5);          // recline the whole bench rear-down (you fall into the back)
+const TB = -SEAT_TILT;             // group rotation about X (rear-down)
+const FRONT_GROUND_DROP = 4;       // front ground sits 4" lower than the back
+const GROUND_SLOPE = rad(9.5);     // ≈4" over the 24" footprint
+const FRONT_FOOT_Y = -(FRONT_GROUND_DROP + 1.5); // front legs run further down to the low front ground
+
+// ---- Symmetric A legs (front legs lengthened for the slope) ----
+for(const [side,sx] of [['left',-LEG_X],['right',LEG_X]]){
+  addLeg('leg-front-'+side,'Front leg ('+side+')', sx, FOOT_HALF,  frontLegZ(LEG_TOP_Y), FRONT_FOOT_Y);
+  addLeg('leg-back-'+side, 'Back leg ('+side+')',  sx, -FOOT_HALF, backLegZ(LEG_TOP_Y), 0);
+}
+
+// ---- Backrest posts (3): left, centre, right — turned so the 3.5" face takes the slats ----
+for(const [side,bx] of [['left',-BACKREST_X],['center',0],['right',BACKREST_X]]){
+  const s = strut(bx, backrest.z0,backrest.y0, backrest.z1,backrest.y1, W4,TH);
+  add('backrest-'+side,'Backrest post ('+side+')','2x4','2×4 · '+backrest.len.toFixed(1)+'″(reclined '+BACK_RECLINE_DEG+'°)',
+      s.size, s.pos, s.rotX);
+}
+
+// ---- Per-side rails: flat armrest, seat rail, bottom rail ----
+for(const [side,sx,rx] of [['left',-LEG_X,-RAIL_X],['right',LEG_X,RAIL_X]]){
+  // Flat armrest: caps the A from the front leg, over the back leg, to the backrest
+  const armFront = frontLegZ(ARM_CY) + W4/2 + 4.5;   // longer front overhang (reaches past seat)
+  const armBack  = backrestZ(ARM_CY) + TH/2;        // butts into the backrest
+  add('armrest-'+side,'Armrest ('+side+')','2x4','2×4 · '+(armFront-armBack).toFixed(1)+'″(flat)',
+      [W4, TH, armFront-armBack], [sx, ARM_CY, (armFront+armBack)/2]);
+  // Seat rail (2x4 on edge) — seat slats land on top; rear end butts the backrest post
+  const srF = frontLegZ(SEAT_RAIL_CY), srB = postFrontZ(SEAT_RAIL_CY - W4/2);
+  add('seatrail-'+side,'Seat rail ('+side+')','2x4','2×4 · '+(srF-srB).toFixed(1)+'″',
+      [TH, W4, srF-srB], [rx, SEAT_RAIL_CY, (srF+srB)/2]);
+  // Bottom rail → TREE TAIL: runs all the way back, ~24″ past the backrest top, to lag onto the trunk
+  const brF = frontLegZ(BOT_RAIL_CY), brB = backrestZ(H) - 24;
+  add('bottomrail-'+side,'Bottom rail / tree tail ('+side+')','2x4','2×4 · '+(brF-brB).toFixed(1)+'″ (tree tail)',
+      [TH, W4, brF-brB], [rx, BOT_RAIL_CY, (brF+brB)/2]);
+}
+
+// ---- Seat slats (2x4 flat, left-to-right, on top of the seat rails) ----
+{
+  const frontC = 7.5, rearC = -7.5;
+  const step = (frontC - rearC)/(SEAT_SLAT_COUNT-1);
+  for(let i=0;i<SEAT_SLAT_COUNT;i++){
+    add('seat-slat-'+(i+1),'Seat slat '+(i+1),'2x4','2×4 · 45″',
+        [SLAT_W, TH, W4], [0, SEAT_TOP - TH/2, frontC - i*step]);
+  }
+}
+
+// ---- Back slats (2x4, left-to-right, on the seat-side face of the backrest) ----
+{
+  const dirY = (backrest.y1-backrest.y0)/backrest.len;
+  const dirZ = (backrest.z1-backrest.z0)/backrest.len;
+  const nY = Math.sin(RCL), nZ = Math.cos(RCL), off = TH; // proud of the 3.5" front face (post 1.5" deep)
+  // start the lowest slat ~2" above the seat (robust to post length), top slat flush with the post top
+  const sLo = (SEAT_TOP + 2 - backrest.y0 - off*nY)/dirY, sHi = backrest.len - W4/2;
+  const step = (sHi - sLo)/(BACK_SLAT_COUNT-1);
+  for(let i=0;i<BACK_SLAT_COUNT;i++){
+    const t  = sLo + i*step;
+    const cy = backrest.y0 + t*dirY + off*nY;
+    const cz = backrest.z0 + t*dirZ + off*nZ;
+    add('back-slat-'+(i+1),'Backrest slat '+(i+1),'2x4','2×4 · 45″',
+        [SLAT_W, W4, TH], [0, cy, cz], -RCL);
+  }
+}
+
+// ---- Two bottom cross beams (front + rear) joining the A-frames ----
+const BEAM_FIT = 2*(RAIL_X - TH/2);   // fit between the tails' inner faces (no crossing)
+add('beam-front','Bottom cross beam – front','2x4','2×4 · 42″',
+    [BEAM_FIT, W4, TH], [0, BOT_RAIL_CY, frontLegZ(BOT_RAIL_CY)]);
+// Rear beam: pulled IN toward the seat so its 3.5" face laminates flat against the posts'
+// 3.5" faces; CANTED to the recline; butted on its front by the two bottom rails.
+const beamCZ = backrestZ(BEAM_Y) + TH*Math.cos(RCL);   // beam centre Z (in front of the post line)
+const beamCY = BEAM_Y + TH*Math.sin(RCL);              // beam centre Y
+add('beam-rear','Bottom cross beam – rear (canted; posts'+"'"+' faces mount flush to its 3.5″ face)','2x4','2×4 · 42″',
+    [BEAM_FIT, W4, TH], [0, beamCY, beamCZ], -RCL);
+
+/* =====================================================================
+   THREE.JS SCENE
+   ===================================================================== */
+const app = document.getElementById('app');
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x10100d);
+scene.fog = new THREE.Fog(0x10100d, 130, 320);
+
+const camera = new THREE.PerspectiveCamera(42, innerWidth/innerHeight, 0.5, 2000);
+camera.position.set(60, 42, 72);
+
+const renderer = new THREE.WebGLRenderer({ antialias:true });
+renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+renderer.setSize(innerWidth, innerHeight);
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+app.appendChild(renderer.domElement);
+
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true;
+controls.dampingFactor = 0.08;
+controls.target.set(0, 16, -3);
+controls.maxPolarAngle = Math.PI*0.5 + 0.18;
+controls.minDistance = 28;
+controls.maxDistance = 200;
+
+// ---- Lighting ----
+scene.add(new THREE.AmbientLight(0xfff4e2, 0.55));
+const hemi = new THREE.HemisphereLight(0xbfd6ff, 0x4a3c2a, 0.35);
+scene.add(hemi);
+
+const key = new THREE.DirectionalLight(0xfff1d6, 2.1);
+key.position.set(48, 78, 40);
+key.castShadow = true;
+key.shadow.mapSize.set(2048,2048);
+key.shadow.camera.near = 10;
+key.shadow.camera.far = 260;
+key.shadow.camera.left = -60; key.shadow.camera.right = 60;
+key.shadow.camera.top = 70;   key.shadow.camera.bottom = -20;
+key.shadow.bias = -0.0004;
+key.shadow.radius = 4;
+scene.add(key);
+
+const fill = new THREE.DirectionalLight(0xaecbff, 0.5);
+fill.position.set(-40, 30, -30);
+scene.add(fill);
+
+// ---- Ground + grid ----
+const ground = new THREE.Mesh(
+  new THREE.CircleGeometry(160, 64),
+  new THREE.MeshStandardMaterial({ color:0x2a2a26, roughness:1 })
+);
+ground.rotation.x = -Math.PI/2;
+ground.position.y = 0;
+ground.receiveShadow = true;
+scene.add(ground);
+
+const grid = new THREE.GridHelper(240, 80, 0x4a4a40, 0x33332c);
+grid.position.y = 0.02;
+grid.material.transparent = true; grid.material.opacity = 0.5;
+scene.add(grid);
+
+/* =====================================================================
+   BUILD MESHES
+   ===================================================================== */
+const EXPLODE_CENTER = new THREE.Vector3(0, 17, -3);
+const benchGroup = new THREE.Group();
+scene.add(benchGroup);
+
+const boardMat = new THREE.MeshStandardMaterial({ color:0x9c6a39, roughness:0.78, metalness:0.02 });
+
+// ---- Part metadata: cut-list letter, short id (e.g. A·L, G3), and cut angles ----
+function keyOf(n){
+  if(n.startsWith('leg-front'))return 'A'; if(n.startsWith('leg-back'))return 'B';
+  if(n.startsWith('backrest'))return 'C';  if(n.startsWith('armrest'))return 'D';
+  if(n.startsWith('seatrail'))return 'E';  if(n.startsWith('bottomrail'))return 'F';
+  if(n.startsWith('seat-slat'))return 'G'; if(n.startsWith('back-slat'))return 'H';
+  if(n.startsWith('beam-front'))return 'J';if(n.startsWith('beam-rear'))return 'K';
+  return '?';
+}
+function shortId(n){
+  const k=keyOf(n), s=n.match(/-(\d+)$/);
+  if(s) return k+s[1];
+  if(n.endsWith('-left'))return k+'L'; if(n.endsWith('-right'))return k+'R';
+  if(n.endsWith('-center'))return k+'C';
+  return k;
+}
+function angleOf(n){
+  if(n.startsWith('leg-'))      return 'Both ends bevelled 12° (foot flat to floor, top level)';
+  if(n.startsWith('backrest'))  return 'Reclined 20° off vertical · bottom cut 20°';
+  if(n.startsWith('armrest'))   return 'Laid flat · square ends';
+  if(n.startsWith('seatrail'))  return 'On edge · rear end cut 20° (butts the post)';
+  if(n.startsWith('bottomrail'))return 'On edge · rear end cut 20° (butts the rear beam)';
+  if(n.startsWith('seat-slat')) return 'Flat · square ends';
+  if(n.startsWith('back-slat')) return 'On the posts · square ends';
+  if(n.startsWith('beam-front'))return 'On edge · square ends';
+  if(n.startsWith('beam-rear')) return 'Canted 20° · 3½″ face laminates the posts';
+  return '';
+}
+
+// ---- Floating letter labels (toggleable) ----
+const labelsGroup = new THREE.Group(); scene.add(labelsGroup); labelsGroup.visible = false;
+function roundRect(g,x,y,w,h,r){ g.beginPath(); g.moveTo(x+r,y); g.arcTo(x+w,y,x+w,y+h,r); g.arcTo(x+w,y+h,x,y+h,r); g.arcTo(x,y+h,x,y,r); g.arcTo(x,y,x+w,y,r); g.closePath(); }
+function makeLabel(text){
+  const c=document.createElement('canvas'); c.width=160; c.height=110;
+  const g=c.getContext('2d');
+  g.fillStyle='rgba(36,26,14,0.92)'; roundRect(g,6,18,148,74,18); g.fill();
+  g.strokeStyle='#d2913f'; g.lineWidth=5; roundRect(g,6,18,148,74,18); g.stroke();
+  g.fillStyle='#fff'; g.font='bold 52px Georgia,serif'; g.textAlign='center'; g.textBaseline='middle';
+  g.fillText(text,80,57);
+  const tex=new THREE.CanvasTexture(c); tex.anisotropy=4;
+  const spr=new THREE.Sprite(new THREE.SpriteMaterial({map:tex,depthTest:false,transparent:true}));
+  spr.scale.set(4.6,3.2,1);
+  return spr;
+}
+
+const parts = [];      // board meshes
+const labels = [];     // letter sprites, parallel to parts
+for(const def of partDefs){
+  const mat = boardMat.clone();
+  // a little per-board colour variation for realism
+  mat.color.offsetHSL(0, (Math.random()-0.5)*0.03, (Math.random()-0.5)*0.05);
+  let geo;
+  if(def.verts){                       // angled-end board (legs)
+    const pos = [];
+    for(const f of FACE_IDX){
+      const q = f.map(i=>def.verts[i]);
+      for(const [a,b,c] of [[0,1,2],[0,2,3]]) pos.push(...q[a],...q[b],...q[c]);
+    }
+    geo = new THREE.BufferGeometry();
+    geo.setAttribute('position', new THREE.Float32BufferAttribute(pos,3));
+    geo.computeVertexNormals();
+    mat.side = THREE.DoubleSide;
+  } else {
+    geo = new THREE.BoxGeometry(def.size[0], def.size[1], def.size[2]);
+  }
+  const mesh = new THREE.Mesh(geo, mat);
+  mesh.position.set(def.pos[0], def.pos[1], def.pos[2]);
+  if(def.rotX) mesh.rotation.x = def.rotX;
+  mesh.castShadow = true;
+  mesh.receiveShadow = true;
+  mesh.userData = {
+    partName: def.name, label: def.label, lumber: def.lumber, dim: def.dim,
+    key: keyOf(def.name), id: shortId(def.name), angles: angleOf(def.name),
+    home: mesh.position.clone(), isBolt:false, def: def,
+    baseColor: mesh.material.color.getHex()
+  };
+  benchGroup.add(mesh);
+  parts.push(mesh);
+  const lbl = makeLabel(mesh.userData.id);
+  lbl.position.copy(mesh.position);
+  labelsGroup.add(lbl);
+  labels.push(lbl);
+}
+
+// ---- Fasteners: 4 carriage bolts (backrest ↔ back leg) + countersunk screw heads ----
+// (Frame joints use hidden pocket-hole screws → no visible heads; back slats are
+//  screwed from behind → heads hidden. Only the face-screwed joints show heads.)
+const boltsGroup = new THREE.Group();
+scene.add(boltsGroup);
+const steelMat = new THREE.MeshStandardMaterial({ color:0x2a2d33, roughness:0.35, metalness:0.9 });
+const screwMat = new THREE.MeshStandardMaterial({ color:0x5a5e66, roughness:0.45, metalness:0.85 });
+function addHW(m){ m.castShadow=true; m.userData={isBolt:true}; boltsGroup.add(m); m.userData.home=m.position.clone(); }
+
+// Carriage bolts: 2 per side through the laminated backrest post + back leg
+const shankGeo = new THREE.CylinderGeometry(0.27,0.27,5.0,12);
+const headGeo  = new THREE.CylinderGeometry(0.55,0.55,0.4,16);
+for(const sx of [-1,1]){
+  for(const y of [13.5, 16]){
+    const z = backLegZ(y);
+    const shank = new THREE.Mesh(shankGeo, steelMat); shank.rotation.z = Math.PI/2; shank.position.set(sx*21.6, y, z); addHW(shank);
+    const head  = new THREE.Mesh(headGeo,  steelMat); head.rotation.z  = Math.PI/2; head.position.set(sx*24.05, y, z); addHW(head);
+  }
+}
+
+// Countersunk screw heads on the visible face-screwed joints
+const scrGeo = new THREE.CylinderGeometry(0.22,0.16,0.18,12);
+function addScrew(x,y,z, tilt=0){ const m=new THREE.Mesh(scrGeo,screwMat); m.position.set(x,y,z); if(tilt) m.rotation.x=tilt; addHW(m); }
+// seat slats → seat rails: 2 per slat, on the seat surface over each rail
+for(let i=0;i<SEAT_SLAT_COUNT;i++){
+  const z = 7.5 - i*(15/(SEAT_SLAT_COUNT-1));
+  for(const rx of [-RAIL_X, RAIL_X]) addScrew(rx, SEAT_TOP+0.02, z);
+}
+// armrests → leg top and backrest: 2 per arm, on the armrest top
+for(const sx of [-LEG_X, LEG_X]){
+  addScrew(sx, ARM_TOP+0.02, frontLegZ(ARM_CY));
+  addScrew(sx, ARM_TOP+0.02, backrestZ(ARM_CY));
+}
+
+/* =====================================================================
+   STATE + INTERACTION
+   ===================================================================== */
+let mode = 'assembled';        // 'assembled' | 'exploded' | 'individual'
+let explodeFrac = 0;           // 0..1
+let selected = 'all';
+let showBolts = true;
+
+function applyExplode(){
+  const scale = 1 + explodeFrac * 1.9;
+  for(let i=0;i<parts.length;i++){
+    const m = parts[i];
+    m.position.copy(m.userData.home).sub(EXPLODE_CENTER).multiplyScalar(scale).add(EXPLODE_CENTER);
+    labels[i].position.copy(m.position);      // letter follows its board
+  }
+  for(const m of boltsGroup.children){
+    m.position.copy(m.userData.home).sub(EXPLODE_CENTER).multiplyScalar(scale).add(EXPLODE_CENTER);
+  }
+}
+
+function setEmissive(m, on){
+  m.material.emissive.setHex(on ? 0x77400a : 0x000000);
+  m.material.emissiveIntensity = on ? 0.9 : 0;
+}
+
+function updateAppearance(){
+  const isolating = (mode === 'individual' && selected !== 'all');
+  for(let i=0;i<parts.length;i++){
+    const m = parts[i];
+    const sel = m.userData.partName === selected;
+    const mat = m.material;
+    if(isolating && !sel){
+      mat.transparent = true; mat.opacity = 0.07; mat.depthWrite = false;
+      setEmissive(m, false);
+    } else {
+      mat.transparent = false; mat.opacity = 1; mat.depthWrite = true;
+      setEmissive(m, sel && selected !== 'all');
+    }
+    // when isolating, only show the isolated board's letter
+    labels[i].visible = !(isolating && !sel);
+  }
+  // hide hardware when isolating a (non-bolt) board, else honour the checkbox
+  boltsGroup.visible = showBolts && !isolating;
+}
+
+function updateReadout(){
+  const keyEl  = document.getElementById('ro-key');
+  const nameEl = document.getElementById('ro-name');
+  const dimEl  = document.getElementById('ro-dim');
+  const angEl  = document.getElementById('ro-ang');
+  const hintEl = document.getElementById('ro-hint');
+  const miniEl = document.getElementById('mini');
+  if(selected === 'all'){
+    keyEl.textContent = '·';
+    nameEl.textContent = 'Whole assembly';
+    dimEl.textContent  = parts.length + ' boards · ' + W + '″ × ' + H + '″ × ' + D + '″';
+    angEl.style.display = 'none';
+    hintEl.textContent = 'Tap a board to see its letter, size & cut angles.';
+    miniEl.innerHTML = 'Tap <b>⚙️ Controls</b> · tap a board to inspect it';
+  } else {
+    const m = parts.find(p=>p.userData.partName === selected);
+    keyEl.textContent  = m.userData.id;
+    nameEl.textContent = m.userData.label;
+    dimEl.textContent  = m.userData.dim;
+    angEl.style.display = m.userData.angles ? 'block' : 'none';
+    angEl.textContent  = '✂︎ ' + m.userData.angles;
+    hintEl.textContent = mode === 'individual'
+      ? 'Isolated. Choose “Show all parts” to reset.'
+      : 'Highlighted in the assembly.';
+    miniEl.innerHTML = '<b>' + m.userData.id + '</b> · ' + m.userData.label + ' · ' + m.userData.dim;
+  }
+}
+
+/* =====================================================================
+   DIMENSIONS & EDGE LABELS  (CAD-style annotation layer, toggleable)
+   ===================================================================== */
+let dimsOn = false;
+const wholeDims = new THREE.Group(); scene.add(wholeDims);
+const dimMat = new THREE.LineBasicMaterial({ color:0xffcf8a, transparent:true, depthTest:false });
+
+function fmtIn(v){
+  const e=Math.round(v*8), w=Math.floor(e/8), f=e%8;
+  return (w||!f? w:'') + ['','⅛','¼','⅜','½','⅝','¾','⅞'][f] + '″';
+}
+function txtSprite(text, {h=2.2, bg='rgba(20,15,9,0.85)', fg='#ffe9c8', bd='#d2913f'}={}){
+  const fs=40, pad=10, cv=document.createElement('canvas'), g=cv.getContext('2d');
+  g.font='bold '+fs+'px Georgia,serif';
+  cv.width=Math.ceil(g.measureText(text).width)+pad*2; cv.height=fs+pad*2;
+  g.fillStyle=bg; roundRect(g,1,1,cv.width-2,cv.height-2,12); g.fill();
+  g.strokeStyle=bd; g.lineWidth=3; roundRect(g,1,1,cv.width-2,cv.height-2,12); g.stroke();
+  g.fillStyle=fg; g.font='bold '+fs+'px Georgia,serif'; g.textAlign='center'; g.textBaseline='middle';
+  g.fillText(text, cv.width/2, cv.height/2);
+  const tex=new THREE.CanvasTexture(cv); tex.anisotropy=4;
+  const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:tex, depthTest:false, transparent:true}));
+  sp.scale.set(h*cv.width/cv.height, h, 1);
+  return sp;
+}
+function dimLine(parent, a, b){
+  parent.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(
+    [new THREE.Vector3(...a), new THREE.Vector3(...b)]), dimMat));
+}
+function nameDir(n){
+  const ax=Math.abs(n[0]),ay=Math.abs(n[1]),az=Math.abs(n[2]);
+  if(ax>=ay&&ax>=az) return n[0]>0?'right':'left';
+  if(ay>=az) return n[1]>0?'top':'bottom';
+  return n[2]>0?'front':'back';
+}
+function cutEndsBox(name, li, h){
+  const end=s=>{const p=[0,0,0]; p[li]=s*(h[li]+0.7); return p;};
+  if(name.startsWith('backrest'))  return [{pos:end(-1), text:'20°'}];
+  if(name.startsWith('seatrail')||name.startsWith('bottomrail')) return [{pos:end(-1), text:'20°'}];
+  if(name.startsWith('beam-rear')) return [{pos:[0,h[1]+0.7,0], text:'canted 20°'}];
+  return [];
+}
+function buildPartDims(m){
+  const def=m.userData.def, grp=new THREE.Group(); grp.name='__dims';
+  if(!def.verts){
+    const s=def.size, h=s.map(v=>v/2);
+    const li=s.indexOf(Math.max(...s)), o1=(li+1)%3, o2=(li+2)%3;
+    const a=[0,0,0], b=[0,0,0]; a[li]=-h[li]; b[li]=h[li];
+    a[o1]=b[o1]=-(h[o1]+1.4); a[o2]=b[o2]=-(h[o2]+1.4);
+    dimLine(grp, a, b);
+    let lab=txtSprite(fmtIn(s[li])); lab.position.set((a[0]+b[0])/2,(a[1]+b[1])/2,(a[2]+b[2])/2); grp.add(lab);
+    const cs=[0,0,0]; cs[li]=h[li]+1.4; let csL=txtSprite('1½ × 3½',{h:1.7}); csL.position.set(...cs); grp.add(csL);
+    const rot=def.rotX||0, c=Math.cos(rot), sn=Math.sin(rot);
+    for(const d of [[1,0,0],[-1,0,0],[0,1,0],[0,-1,0],[0,0,1],[0,0,-1]]){
+      const wn=[d[0], d[1]*c-d[2]*sn, d[1]*sn+d[2]*c];
+      const sp=txtSprite(nameDir(wn),{h:1.4, bg:'rgba(46,34,20,0.8)', fg:'#d8c4a0'});
+      sp.position.set(d[0]*(h[0]+0.2), d[1]*(h[1]+0.2), d[2]*(h[2]+0.2)); grp.add(sp);
+    }
+    for(const ce of cutEndsBox(def.name, li, h)){
+      const sp=txtSprite('✂ '+ce.text,{h:1.9, bg:'rgba(150,42,22,0.92)', bd:'#ffd27f'}); sp.position.set(...ce.pos); grp.add(sp);
+    }
+  } else {
+    const V=def.verts.map(v=>new THREE.Vector3(...v));
+    const avg=ix=>ix.reduce((a,i)=>a.add(V[i]),new THREE.Vector3()).multiplyScalar(1/ix.length);
+    const bot=avg([0,1,2,3]), top=avg([4,5,6,7]);
+    const off=new THREE.Vector3(-(TH/2+1.4),0,-(W4/2+1.4));
+    const a=bot.clone().add(off), b=top.clone().add(off);
+    dimLine(grp, [a.x,a.y,a.z], [b.x,b.y,b.z]);
+    let lab=txtSprite(fmtIn(top.clone().sub(bot).length())); lab.position.copy(a.clone().add(b).multiplyScalar(0.5)); grp.add(lab);
+    let cs=txtSprite('1½ × 3½',{h:1.7}); cs.position.copy(top.clone().add(new THREE.Vector3(0,1.4,0))); grp.add(cs);
+    for(const e of [bot,top]){ const sp=txtSprite('✂ 12°',{h:1.9, bg:'rgba(150,42,22,0.92)', bd:'#ffd27f'}); sp.position.copy(e.clone().add(new THREE.Vector3(TH/2+0.6,0,W4/2+0.6))); grp.add(sp); }
+    // face names from the 6 leg faces
+    for(const f of FACE_IDX){
+      const p=f.map(i=>V[i]), ctr=p.reduce((s,i)=>s.add(i),new THREE.Vector3()).multiplyScalar(1/4);
+      const e1=p[1].clone().sub(p[0]), e2=p[3].clone().sub(p[0]); const nrm=e1.cross(e2).normalize();
+      const out=ctr.clone(); if(nrm.dot(ctr)<0) nrm.negate();
+      const sp=txtSprite(nameDir([nrm.x,nrm.y,nrm.z]),{h:1.3, bg:'rgba(46,34,20,0.8)', fg:'#d8c4a0'});
+      sp.position.copy(ctr.add(nrm.multiplyScalar(0.3))); grp.add(sp);
+    }
+  }
+  m.add(grp);
+}
+function buildWholeDims(){
+  const fZ=14, bZ=-18, R=27, addW=(sp,x,y,z)=>{sp.position.set(x,y,z); wholeDims.add(sp);};
+  dimLine(wholeDims,[-24,0.4,fZ],[24,0.4,fZ]);            addW(txtSprite('48″ wide'),0,1.6,fZ);
+  dimLine(wholeDims,[R,0,bZ],[R,36.5,bZ]);                addW(txtSprite('36½″'),R+0.5,18,bZ);
+  dimLine(wholeDims,[R-3.5,0,fZ],[R-3.5,17,fZ]);          addW(txtSprite('seat 17″'),R-3.5,8.5,fZ);
+  dimLine(wholeDims,[-R,0.4,fZ],[-R,0.4,bZ]);             addW(txtSprite('~32″ deep'),-R,1.6,(fZ+bZ)/2);
+  addW(txtSprite('back 20° (≈110°)',{bg:'rgba(46,34,20,0.85)'}),0,31,bZ+2.5);
+}
+function clearDims(){
+  while(wholeDims.children.length) wholeDims.remove(wholeDims.children[0]);
+  for(const m of parts){ const d=m.getObjectByName('__dims'); if(d) m.remove(d); }
+}
+function refreshDims(){
+  clearDims();
+  if(!dimsOn) return;
+  if(selected==='all') buildWholeDims();
+  else { const m=parts.find(p=>p.userData.partName===selected); if(m) buildPartDims(m); }
+}
+
+/* ---------- UI wiring ---------- */
+const btnA = document.getElementById('m-assembled');
+const btnE = document.getElementById('m-exploded');
+const btnI = document.getElementById('m-individual');
+const slider = document.getElementById('explode');
+const pct = document.getElementById('explode-pct');
+const partsel = document.getElementById('partsel');
+const boltchk = document.getElementById('boltchk');
+const letterchk = document.getElementById('letterchk');
+const dimchk = document.getElementById('dimchk');
+const fab = document.getElementById('fab');
+const collapseBtn = document.getElementById('collapse');
+
+// ---- Collapsible panel (keeps the bench visible on small screens) ----
+function setCollapsed(c){ document.body.classList.toggle('ui-collapsed', c); }
+collapseBtn.onclick = ()=> setCollapsed(true);
+fab.onclick = ()=> setCollapsed(false);
+
+// populate dropdown
+{
+  const optAll = document.createElement('option');
+  optAll.value = 'all'; optAll.textContent = '— Show all parts —';
+  partsel.appendChild(optAll);
+  // group headings via optgroups
+  const groups = {
+    'A-frame legs':   p=>p.userData.partName.startsWith('leg-'),
+    'Backrest posts': p=>p.userData.partName.startsWith('backrest-'),
+    'Armrests':       p=>p.userData.partName.startsWith('armrest'),
+    'Seat rails':     p=>p.userData.partName.startsWith('seatrail'),
+    'Bottom rails':   p=>p.userData.partName.startsWith('bottomrail'),
+    'Seat slats':     p=>p.userData.partName.startsWith('seat-slat'),
+    'Backrest slats': p=>p.userData.partName.startsWith('back-slat'),
+    'Cross beams':    p=>p.userData.partName.startsWith('beam-'),
+  };
+  for(const [gname,test] of Object.entries(groups)){
+    const og = document.createElement('optgroup');
+    og.label = gname;
+    for(const m of parts.filter(test)){
+      const o = document.createElement('option');
+      o.value = m.userData.partName; o.textContent = m.userData.id + ' · ' + m.userData.label;
+      og.appendChild(o);
+    }
+    partsel.appendChild(og);
+  }
+}
+
+function setMode(next){
+  mode = next;
+  btnA.classList.toggle('active', mode==='assembled');
+  btnE.classList.toggle('active', mode==='exploded');
+  btnI.classList.toggle('active', mode==='individual');
+
+  if(mode==='assembled'){
+    explodeFrac = 0; slider.value = 0; pct.textContent = '0%';
+    selected = 'all'; partsel.value = 'all';
+  } else if(mode==='exploded'){
+    if(explodeFrac === 0){ explodeFrac = 0.5; slider.value = 50; pct.textContent = '50%'; }
+    selected = 'all'; partsel.value = 'all';
+  } else if(mode==='individual'){
+    if(selected === 'all'){ selected = parts[0].userData.partName; partsel.value = selected; }
+  }
+  applyExplode(); updateAppearance(); updateReadout(); refreshDims();
+}
+
+btnA.onclick = ()=>setMode('assembled');
+btnE.onclick = ()=>setMode('exploded');
+btnI.onclick = ()=>setMode('individual');
+
+slider.oninput = ()=>{
+  explodeFrac = (+slider.value)/100;
+  pct.textContent = slider.value + '%';
+  if(explodeFrac>0 && mode==='assembled') setMode('exploded');
+  applyExplode();
+};
+
+partsel.onchange = ()=>{
+  selected = partsel.value;
+  if(selected!=='all' && mode!=='individual' && mode!=='exploded'){ /* keep mode */ }
+  if(selected==='all' && mode==='individual'){ /* stay in individual but show all */ }
+  updateAppearance(); updateReadout(); refreshDims();
+};
+
+boltchk.onchange = ()=>{ showBolts = boltchk.checked; updateAppearance(); };
+letterchk.onchange = ()=>{ labelsGroup.visible = letterchk.checked; };
+dimchk.onchange = ()=>{ dimsOn = dimchk.checked; refreshDims(); };
+
+/* ---------- Raycast click-to-select ---------- */
+const raycaster = new THREE.Raycaster();
+const pointer = new THREE.Vector2();
+let downXY = null;
+renderer.domElement.addEventListener('pointerdown', e=>{ downXY=[e.clientX,e.clientY]; });
+renderer.domElement.addEventListener('pointerup', e=>{
+  if(!downXY) return;
+  const moved = Math.hypot(e.clientX-downXY[0], e.clientY-downXY[1]);
+  downXY = null;
+  if(moved > 5) return;          // it was a drag, not a click
+  pointer.x = (e.clientX/innerWidth)*2 - 1;
+  pointer.y = -(e.clientY/innerHeight)*2 + 1;
+  raycaster.setFromCamera(pointer, camera);
+  const hits = raycaster.intersectObjects(parts, false);
+  if(hits.length){
+    selected = hits[0].object.userData.partName;
+    partsel.value = selected;
+    updateAppearance(); updateReadout(); refreshDims();
+  }
+});
+
+/* =====================================================================
+   RENDER LOOP
+   ===================================================================== */
+// Distance that frames the whole bench for the current aspect ratio
+// (portrait phones need the camera further back so the 48″ width fits).
+function framingDistance(){
+  const a = innerWidth/innerHeight;
+  if(a >= 1.2) return 105;
+  if(a >= 0.85) return 130;
+  if(a >= 0.6)  return 165;
+  return 200;
+}
+function frameCamera(){
+  const dir = camera.position.clone().sub(controls.target);
+  if(dir.lengthSq() < 1e-6) dir.set(60,42,72);
+  dir.normalize().multiplyScalar(framingDistance());
+  camera.position.copy(controls.target).add(dir);
+  camera.updateProjectionMatrix();
+}
+
+addEventListener('resize', ()=>{
+  camera.aspect = innerWidth/innerHeight;
+  renderer.setSize(innerWidth, innerHeight);
+  frameCamera();
+});
+
+function tick(){
+  controls.update();
+  renderer.render(scene, camera);
+  requestAnimationFrame(tick);
+}
+
+// ---- SITE: recline the whole assembly 5°, slope the ground, plant the tree ----
+benchGroup.rotation.x = TB;
+boltsGroup.rotation.x = TB;
+labelsGroup.rotation.x = TB;
+
+// sloped ground (front lower than back)
+ground.rotation.set(-Math.PI/2 + GROUND_SLOPE, 0, 0);
+ground.position.y = -3;
+grid.rotation.x = GROUND_SLOPE;
+grid.position.y = -2.9;
+
+// the tree the tails are lagged to (~43″-diameter trunk, between the two tails)
+const treeMat = new THREE.MeshStandardMaterial({ color:0x5a4327, roughness:0.95 });
+const tree = new THREE.Mesh(new THREE.CylinderGeometry(21.5, 23, 90, 24), treeMat);
+tree.position.set(0, 30, -42);
+tree.castShadow = true; tree.receiveShadow = true;
+scene.add(tree);
+
+controls.target.set(0, 14, -10);
+
+// init
+applyExplode();
+updateAppearance();
+updateReadout();
+setCollapsed(innerWidth <= 640);   // start with panel out of the way on phones
+frameCamera();                     // fit the whole bench for the current screen
+document.getElementById('loading').remove();
+tick();
+</script>
+</body>
+</html>
