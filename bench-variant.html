@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>A‑Frame Bench — Interactive 3D Model</title>
+<title>A‑Frame Bench · 2×6 / 1×6 Variant — 3D Model</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Ctext y='14' font-size='14'%3E%F0%9F%AA%91%3C/text%3E%3C/svg%3E" />
 <style>
   :root{
@@ -140,10 +140,10 @@
 
 <div id="ui">
   <div class="titlebar">
-    <h1>🪑 A‑Frame Bench</h1>
+    <h1>🪑 A‑Frame Bench · Variant</h1>
     <button id="collapse" class="icon-btn" title="Hide panel" aria-label="Hide panel">✕</button>
   </div>
-  <p class="sub">Interactive build model · two A‑frame sides · 48″ × 36½″ × 30½″ · actual 2×4 sizes</p>
+  <p class="sub">VARIANT: 2×6 armrests &amp; seat slats · 1×6 back slats · routed (eased) edges</p>
 
   <div class="group">
     <div class="lbl">Render mode</div>
@@ -188,9 +188,8 @@
   </div>
 
   <div class="links">
-    📋 <a href="plans.html">All plans</a> ·
-    <a href="projects/2x4-garden-bench.html">Cut list →</a> ·
-    <a href="bench-variant.html">2×6 variant →</a>
+    ← <a href="index.html">Original (all‑2×4) design</a> ·
+    📋 <a href="projects/2x4-garden-bench.html">Cut list →</a>
   </div>
 </div>
 
@@ -208,6 +207,8 @@
 <script type="module">
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
+const EASE = 0.12;   // ⅛″ eased/routed edge radius on slats & armrests
 
 /* =====================================================================
    PARAMETRIC DIMENSIONS  (all values in INCHES; 1 unit = 1 inch)
@@ -230,17 +231,20 @@ const LEG_SPLAY_DEG    = 12;  // each leg's lean from vertical (SYMMETRIC A)
 const BACK_RECLINE_DEG = 20;  // separate backrest recline off vertical (≈110° seat-to-back)
 const FOOT_HALF = 12;         // half the base spread: front foot +12, back foot −12 (24″ base)
 const BOT_RAIL_CY = 7.5;      // bottom rail centre ≈ 6″ off the floor
-const SEAT_SLAT_COUNT = 5;
-const BACK_SLAT_COUNT = 5;
+const SEAT_SLAT_COUNT = 3;   // variant: fewer, wider 2x6 seat slats
+const BACK_SLAT_COUNT = 3;   // variant: fewer, wider 1x6 back slats
 
 // Actual (dressed) lumber cross-sections — NOT nominal
 const LUMBER = {
-  '2x6': { a:1.5, b:5.5 },
-  '2x4': { a:1.5, b:3.5 },
-  '2x2': { a:1.5, b:1.5 },
+  '2x6': { a:1.5,  b:5.5 },
+  '2x4': { a:1.5,  b:3.5 },
+  '2x2': { a:1.5,  b:1.5 },
+  '1x6': { a:0.75, b:5.5 },   // variant: thinner, wider back slats
 };
 const TH = LUMBER['2x4'].a;   // 1.5  (2x thickness)
 const W4 = LUMBER['2x4'].b;   // 3.5  (2x4 width)
+const W6 = LUMBER['2x6'].b;   // 5.5  (2x6 / 1x6 width)
+const T1 = LUMBER['1x6'].a;   // 0.75 (1x thickness)
 
 // Derived geometry helpers ------------------------------------------------
 const rad = THREE.MathUtils.degToRad;
@@ -346,11 +350,11 @@ for(const [side,bx] of [['left',-BACKREST_X],['center',0],['right',BACKREST_X]])
 
 // ---- Per-side rails: flat armrest, seat rail, bottom rail ----
 for(const [side,sx,rx] of [['left',-LEG_X,-RAIL_X],['right',LEG_X,RAIL_X]]){
-  // Flat armrest: caps the A from the front leg, over the back leg, to the backrest
-  const armFront = frontLegZ(ARM_CY) + W4/2 + 4.5;   // longer front overhang (reaches past seat)
+  // Flat armrest — VARIANT: 2x6 for a roomier arm. Caps the A and reaches the backrest.
+  const armFront = frontLegZ(ARM_CY) + W6/2 + 3.5;   // front overhang (reaches past seat)
   const armBack  = backrestZ(ARM_CY) + TH/2;        // butts into the backrest
-  add('armrest-'+side,'Armrest ('+side+')','2x4','2×4 · '+(armFront-armBack).toFixed(1)+'″(flat)',
-      [W4, TH, armFront-armBack], [sx, ARM_CY, (armFront+armBack)/2]);
+  add('armrest-'+side,'Armrest ('+side+')','2x6','2×6 · '+(armFront-armBack).toFixed(1)+'″(flat)',
+      [W6, TH, armFront-armBack], [sx, ARM_CY, (armFront+armBack)/2]);
   // Seat rail (2x4 on edge) — seat slats land on top; rear end butts the backrest post
   const srF = frontLegZ(SEAT_RAIL_CY), srB = postFrontZ(SEAT_RAIL_CY - W4/2);
   add('seatrail-'+side,'Seat rail ('+side+')','2x4','2×4 · '+(srF-srB).toFixed(1)+'″',
@@ -361,30 +365,30 @@ for(const [side,sx,rx] of [['left',-LEG_X,-RAIL_X],['right',LEG_X,RAIL_X]]){
       [TH, W4, brF-brB], [rx, BOT_RAIL_CY, (brF+brB)/2]);
 }
 
-// ---- Seat slats (2x4 flat, left-to-right, on top of the seat rails) ----
+// ---- Seat slats — VARIANT: 3× 2x6 flat, left-to-right, on top of the seat rails ----
 {
-  const frontC = 7.5, rearC = -7.5;
+  const frontC = 6, rearC = -6;
   const step = (frontC - rearC)/(SEAT_SLAT_COUNT-1);
   for(let i=0;i<SEAT_SLAT_COUNT;i++){
-    add('seat-slat-'+(i+1),'Seat slat '+(i+1),'2x4','2×4 · 45″',
-        [SLAT_W, TH, W4], [0, SEAT_TOP - TH/2, frontC - i*step]);
+    add('seat-slat-'+(i+1),'Seat slat '+(i+1),'2x6','2×6 · 45″',
+        [SLAT_W, TH, W6], [0, SEAT_TOP - TH/2, frontC - i*step]);
   }
 }
 
-// ---- Back slats (2x4, left-to-right, on the seat-side face of the backrest) ----
+// ---- Back slats — VARIANT: 3× 1x6, left-to-right, on the front face of the backrest ----
 {
   const dirY = (backrest.y1-backrest.y0)/backrest.len;
   const dirZ = (backrest.z1-backrest.z0)/backrest.len;
-  const nY = Math.sin(RCL), nZ = Math.cos(RCL), off = TH; // proud of the 3.5" front face (post 1.5" deep)
-  // start the lowest slat ~2" above the seat (robust to post length), top slat flush with the post top
-  const sLo = (SEAT_TOP + 2 - backrest.y0 - off*nY)/dirY, sHi = backrest.len - W4/2;
+  const nY = Math.sin(RCL), nZ = Math.cos(RCL), off = TH/2 + T1/2; // proud of the post front face
+  // start the lowest slat ~2" above the seat; top slat flush with the post top
+  const sLo = (SEAT_TOP + 2 - backrest.y0 - off*nY)/dirY, sHi = backrest.len - W6/2;
   const step = (sHi - sLo)/(BACK_SLAT_COUNT-1);
   for(let i=0;i<BACK_SLAT_COUNT;i++){
     const t  = sLo + i*step;
     const cy = backrest.y0 + t*dirY + off*nY;
     const cz = backrest.z0 + t*dirZ + off*nZ;
-    add('back-slat-'+(i+1),'Backrest slat '+(i+1),'2x4','2×4 · 45″',
-        [SLAT_W, W4, TH], [0, cy, cz], -RCL);
+    add('back-slat-'+(i+1),'Backrest slat '+(i+1),'1x6','1×6 · 45″',
+        [SLAT_W, W6, T1], [0, cy, cz], -RCL);
   }
 }
 
@@ -531,6 +535,9 @@ for(const def of partDefs){
     geo.setAttribute('position', new THREE.Float32BufferAttribute(pos,3));
     geo.computeVertexNormals();
     mat.side = THREE.DoubleSide;
+  } else if(/^(seat-slat|back-slat|armrest)/.test(def.name)){
+    // VARIANT: routed (eased) edges on the slats & armrests
+    geo = new RoundedBoxGeometry(def.size[0], def.size[1], def.size[2], 3, EASE);
   } else {
     geo = new THREE.BoxGeometry(def.size[0], def.size[1], def.size[2]);
   }
@@ -578,7 +585,7 @@ const scrGeo = new THREE.CylinderGeometry(0.22,0.16,0.18,12);
 function addScrew(x,y,z, tilt=0){ const m=new THREE.Mesh(scrGeo,screwMat); m.position.set(x,y,z); if(tilt) m.rotation.x=tilt; addHW(m); }
 // seat slats → seat rails: 2 per slat, on the seat surface over each rail
 for(let i=0;i<SEAT_SLAT_COUNT;i++){
-  const z = 7.5 - i*(15/(SEAT_SLAT_COUNT-1));
+  const z = 6 - i*(12/(SEAT_SLAT_COUNT-1));
   for(const rx of [-RAIL_X, RAIL_X]) addScrew(rx, SEAT_TOP+0.02, z);
 }
 // armrests → leg top and backrest: 2 per arm, on the armrest top

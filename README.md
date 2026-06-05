@@ -18,6 +18,7 @@ https://afinoblakeb.github.io/wood/
 | Project | Description |
 | --- | --- |
 | [Interactive 3D bench model](index.html) | A real-time Three.js model of the bench with assembled / exploded / individual-part views. Every board is a separately addressable mesh built from actual lumber sizes. |
+| [3D model — 2×6 / 1×6 variant](bench-variant.html) | A copy of the model exploring wider lumber (2×6 armrests & seat slats, 1×6 back slats) with routed/eased edges. The original all‑2×4 design is unchanged. |
 | [Two-Seat A-Frame Bench — plan](projects/2x4-garden-bench.html) | The written build plan, synced to the model: cut list with angle cuts, fastener schedule, supply list, and step-by-step assembly. |
 | [All plans (gallery)](plans.html) | Project gallery / landing page. |
 
