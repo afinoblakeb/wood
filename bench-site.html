@@ -143,7 +143,7 @@
     <h1>🪑 A‑Frame Bench · Site Install</h1>
     <button id="collapse" class="icon-btn" title="Hide panel" aria-label="Hide panel">✕</button>
   </div>
-  <p class="sub">SITE: reclined 5° on a 4″ slope · bottom rails extended as tree tails · all 2×4</p>
+  <p class="sub">SITE: 60″ wide · reclined 5° on a ~20° slope · tails pinch a 54″ trunk · all 2×4</p>
 
   <div class="group">
     <div class="lbl">Render mode</div>
@@ -220,7 +220,7 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
    The two A-frames are joined left-to-right by seat slats, back slats, and
    two bottom cross beams (front + rear).
    ===================================================================== */
-const W = 48;          // overall width  (left-right, X)
+const W = 60;          // overall width (left-right, X) — widened so the tails pinch a 54″ trunk
 const H = 36.5;        // overall height (Y) — top of backrest
 const D = 30.5;        // overall depth  (front-back, Z) — approx target
 const SEAT_TOP = 17;   // top of seat slats
@@ -334,9 +334,9 @@ const legLen = Math.hypot(frontLegZ(LEG_TOP_Y)-FOOT_HALF, LEG_TOP_Y);
 // ---- SITE INSTALL: whole bench reclined on a slope, anchored to a tree ----
 const SEAT_TILT = rad(5);          // recline the whole bench rear-down (you fall into the back)
 const TB = -SEAT_TILT;             // group rotation about X (rear-down)
-const FRONT_GROUND_DROP = 4;       // front ground sits 4" lower than the back
-const GROUND_SLOPE = rad(9.5);     // ≈4" over the 24" footprint
-const FRONT_FOOT_Y = -(FRONT_GROUND_DROP + 1.5); // front legs run further down to the low front ground
+const GROUND_SLOPE = Math.atan(11/30);            // measured: 11″ drop over 30″ run ≈ 20.1°
+const FRONT_GROUND_DROP = (2*FOOT_HALF)*Math.tan(GROUND_SLOPE); // ≈8.8″ over the 24″ footprint
+const FRONT_FOOT_Y = -(FRONT_GROUND_DROP + 1.5);  // front legs run down to the low front ground
 
 // ---- Symmetric A legs (front legs lengthened for the slope) ----
 for(const [side,sx] of [['left',-LEG_X],['right',LEG_X]]){
@@ -751,7 +751,7 @@ function buildPartDims(m){
 }
 function buildWholeDims(){
   const fZ=14, bZ=-18, R=27, addW=(sp,x,y,z)=>{sp.position.set(x,y,z); wholeDims.add(sp);};
-  dimLine(wholeDims,[-24,0.4,fZ],[24,0.4,fZ]);            addW(txtSprite('48″ wide'),0,1.6,fZ);
+  dimLine(wholeDims,[-30,0.4,fZ],[30,0.4,fZ]);            addW(txtSprite('60″ wide'),0,1.6,fZ);
   dimLine(wholeDims,[R,0,bZ],[R,36.5,bZ]);                addW(txtSprite('36½″'),R+0.5,18,bZ);
   dimLine(wholeDims,[R-3.5,0,fZ],[R-3.5,17,fZ]);          addW(txtSprite('seat 17″'),R-3.5,8.5,fZ);
   dimLine(wholeDims,[-R,0.4,fZ],[-R,0.4,bZ]);             addW(txtSprite('~32″ deep'),-R,1.6,(fZ+bZ)/2);
@@ -920,8 +920,8 @@ grid.position.y = -2.9;
 
 // the tree the tails are lagged to (~43″-diameter trunk, between the two tails)
 const treeMat = new THREE.MeshStandardMaterial({ color:0x5a4327, roughness:0.95 });
-const tree = new THREE.Mesh(new THREE.CylinderGeometry(21.5, 23, 90, 24), treeMat);
-tree.position.set(0, 30, -42);
+const tree = new THREE.Mesh(new THREE.CylinderGeometry(27, 29, 100, 28), treeMat);
+tree.position.set(0, 33, -44);
 tree.castShadow = true; tree.receiveShadow = true;
 scene.add(tree);
 
