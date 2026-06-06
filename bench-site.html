@@ -280,7 +280,7 @@ function strut(x, z0,y0, z1,y1, xThick, profW){
 // below the seat, then reclines back to full height.
 // Backrest posts: rotated 90° so the 3.5" face takes the slats; mounted inboard of the
 // back legs and extended straight down to the (canted) rear cross beam.
-const BACKREST_X = INNER_X - W4/2;            // 20.75 — 3.5" wide post, outer face on leg inner face
+const BACKREST_X = INNER_X - W4/2 - 2;        // outer posts pulled IN 2" so the seat-rail tails clear them
 const SEAT_REF_Y = 14;                        // backrest line crosses the back leg here (bolted)
 const BEAM_Y = BOT_RAIL_CY;                   // rear beam centre height (= bottom-rail height)
 const REAR_BEAM_Y = BEAM_Y + TH*Math.sin(RCL) - (W4/2)*Math.cos(RCL); // posts run down to the beam's lower edge (face-mounted)
@@ -366,13 +366,13 @@ for(const [side,sx,rx] of [['left',-LEG_X,-RAIL_X],['right',LEG_X,RAIL_X]]){
   const armBack  = backrestZ(ARM_CY) + TH/2;        // butts into the backrest
   add('armrest-'+side,'Armrest ('+side+')','2x4','2×4 · '+(armFront-armBack).toFixed(1)+'″(flat)',
       [W4, TH, armFront-armBack], [sx, ARM_CY, (armFront+armBack)/2]);
-  // Seat rail (2x4 on edge) — seat slats land on top; rear end butts the backrest post
-  const srF = frontLegZ(SEAT_RAIL_CY), srB = postFrontZ(SEAT_RAIL_CY - W4/2);
-  add('seatrail-'+side,'Seat rail ('+side+')','2x4','2×4 · '+(srF-srB).toFixed(1)+'″',
+  // Seat rail → TREE TAIL: seat slats land on the front; the rail runs back to pinch the trunk
+  const srF = frontLegZ(SEAT_RAIL_CY), srB = backrestZ(H) - 32;
+  add('seatrail-'+side,'Seat rail / tree tail ('+side+')','2x4','2×4 · '+(srF-srB).toFixed(1)+'″ (tree tail)',
       [TH, W4, srF-srB], [rx, SEAT_RAIL_CY, (srF+srB)/2]);
-  // Bottom rail → TREE TAIL: bench moved 8″ forward, so the tail reaches ~32″ past the backrest top
-  const brF = frontLegZ(BOT_RAIL_CY), brB = backrestZ(H) - 32;
-  add('bottomrail-'+side,'Bottom rail / tree tail ('+side+')','2x4','2×4 · '+(brF-brB).toFixed(1)+'″ (tree tail)',
+  // Bottom rail (short) — butts the rear cross beam (no longer the tail)
+  const brF = frontLegZ(BOT_RAIL_CY), brB = backrestZ(BEAM_Y) + (3*TH/2)*Math.cos(RCL);
+  add('bottomrail-'+side,'Bottom rail ('+side+')','2x4','2×4 · '+(brF-brB).toFixed(1)+'″',
       [TH, W4, brF-brB], [rx, BOT_RAIL_CY, (brF+brB)/2]);
 }
 
@@ -933,9 +933,9 @@ scene.add(tree);
 
 controls.target.set(0, 14, -10);
 
-// ---- Fore/aft position slider: slide along the slope; tails grow/shrink to reach the tree ----
-const tailMeshes = parts.filter(p=>p.userData.partName.startsWith('bottomrail'));
-const BR_FRONT = frontLegZ(BOT_RAIL_CY);   // tail front end (attaches to front leg)
+// ---- Fore/aft position slider: slide along the slope; SEAT-RAIL tails grow/shrink to reach the tree ----
+const tailMeshes = parts.filter(p=>p.userData.partName.startsWith('seatrail'));
+const BR_FRONT = frontLegZ(SEAT_RAIL_CY);  // tail front end (attaches to front leg at seat height)
 const ANCHOR_Z = -41;                      // fixed world z where the tails grip the trunk
 function setBenchOffset(d){
   for(const g of [benchGroup,boltsGroup,labelsGroup]) g.position.set(0, -d*Math.tan(GROUND_SLOPE), d);
@@ -949,7 +949,7 @@ function setBenchOffset(d){
   applyExplode();
   const el=document.getElementById('pos-val');
   if(el) el.textContent = (d>=0?'+':'')+d+'″ fwd · tails '+L.toFixed(0)+'″';
-  if(selected.startsWith&&selected.startsWith('bottomrail')) updateReadout();
+  if(selected.startsWith&&selected.startsWith('seatrail')) updateReadout();
 }
 const posslider = document.getElementById('posslider');
 if(posslider) posslider.oninput = ()=> setBenchOffset(+posslider.value);
