@@ -362,8 +362,8 @@ for(const [side,sx,rx] of [['left',-LEG_X,-RAIL_X],['right',LEG_X,RAIL_X]]){
   const srF = frontLegZ(SEAT_RAIL_CY), srB = postFrontZ(SEAT_RAIL_CY - W4/2);
   add('seatrail-'+side,'Seat rail ('+side+')','2x4','2×4 · '+(srF-srB).toFixed(1)+'″',
       [TH, W4, srF-srB], [rx, SEAT_RAIL_CY, (srF+srB)/2]);
-  // Bottom rail → TREE TAIL: runs all the way back, ~24″ past the backrest top, to lag onto the trunk
-  const brF = frontLegZ(BOT_RAIL_CY), brB = backrestZ(H) - 24;
+  // Bottom rail → TREE TAIL: bench moved 8″ forward, so the tail reaches ~32″ past the backrest top
+  const brF = frontLegZ(BOT_RAIL_CY), brB = backrestZ(H) - 32;
   add('bottomrail-'+side,'Bottom rail / tree tail ('+side+')','2x4','2×4 · '+(brF-brB).toFixed(1)+'″ (tree tail)',
       [TH, W4, brF-brB], [rx, BOT_RAIL_CY, (brF+brB)/2]);
 }
@@ -908,9 +908,9 @@ function tick(){
 }
 
 // ---- SITE: recline the whole assembly 5°, slope the ground, plant the tree ----
-benchGroup.rotation.x = TB;
-boltsGroup.rotation.x = TB;
-labelsGroup.rotation.x = TB;
+// Bench moved 8″ FORWARD (downhill) — shift +z 8 and drop down the slope so feet stay on grade.
+const FWD = 8, FWD_DROP = FWD*Math.tan(GROUND_SLOPE);
+for(const g of [benchGroup, boltsGroup, labelsGroup]){ g.rotation.x = TB; g.position.set(0, -FWD_DROP, FWD); }
 
 // sloped ground (front lower than back)
 ground.rotation.set(-Math.PI/2 + GROUND_SLOPE, 0, 0);
