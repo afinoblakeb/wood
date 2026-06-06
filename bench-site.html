@@ -163,6 +163,14 @@
   </div>
 
   <div class="group">
+    <div class="rowflex">
+      <span class="lbl" style="margin:0">Move fore / aft (along slope)</span>
+      <span class="pct" id="pos-val">+4″</span>
+    </div>
+    <input type="range" id="posslider" min="-12" max="24" value="4" step="1" />
+  </div>
+
+  <div class="group">
     <div class="lbl">Part selector</div>
     <select id="partsel"></select>
   </div>
@@ -908,9 +916,7 @@ function tick(){
 }
 
 // ---- SITE: recline the whole assembly 5°, slope the ground, plant the tree ----
-// Bench moved 8″ FORWARD (downhill) — shift +z 8 and drop down the slope so feet stay on grade.
-const FWD = 8, FWD_DROP = FWD*Math.tan(GROUND_SLOPE);
-for(const g of [benchGroup, boltsGroup, labelsGroup]){ g.rotation.x = TB; g.position.set(0, -FWD_DROP, FWD); }
+for(const g of [benchGroup, boltsGroup, labelsGroup]) g.rotation.x = TB;
 
 // sloped ground (front lower than back)
 ground.rotation.set(-Math.PI/2 + GROUND_SLOPE, 0, 0);
@@ -918,7 +924,7 @@ ground.position.y = -3;
 grid.rotation.x = GROUND_SLOPE;
 grid.position.y = -2.9;
 
-// the tree the tails are lagged to (~43″-diameter trunk, between the two tails)
+// the tree the tails are lagged to (~54″-diameter trunk, between the two tails)
 const treeMat = new THREE.MeshStandardMaterial({ color:0x5a4327, roughness:0.95 });
 const tree = new THREE.Mesh(new THREE.CylinderGeometry(27, 29, 100, 28), treeMat);
 tree.position.set(0, 33, -44);
@@ -927,7 +933,29 @@ scene.add(tree);
 
 controls.target.set(0, 14, -10);
 
+// ---- Fore/aft position slider: slide along the slope; tails grow/shrink to reach the tree ----
+const tailMeshes = parts.filter(p=>p.userData.partName.startsWith('bottomrail'));
+const BR_FRONT = frontLegZ(BOT_RAIL_CY);   // tail front end (attaches to front leg)
+const ANCHOR_Z = -41;                      // fixed world z where the tails grip the trunk
+function setBenchOffset(d){
+  for(const g of [benchGroup,boltsGroup,labelsGroup]) g.position.set(0, -d*Math.tan(GROUND_SLOPE), d);
+  const L = (BR_FRONT - ANCHOR_Z) + d, cz = (BR_FRONT + (ANCHOR_Z - d))/2;
+  for(const m of tailMeshes){
+    m.geometry.dispose();
+    m.geometry = new THREE.BoxGeometry(TH, W4, L);
+    m.userData.home.z = cz;
+    m.userData.dim = '2×4 · '+L.toFixed(1)+'″ (tree tail)';
+  }
+  applyExplode();
+  const el=document.getElementById('pos-val');
+  if(el) el.textContent = (d>=0?'+':'')+d+'″ fwd · tails '+L.toFixed(0)+'″';
+  if(selected.startsWith&&selected.startsWith('bottomrail')) updateReadout();
+}
+const posslider = document.getElementById('posslider');
+if(posslider) posslider.oninput = ()=> setBenchOffset(+posslider.value);
+
 // init
+setBenchOffset(posslider ? +posslider.value : 4);
 applyExplode();
 updateAppearance();
 updateReadout();
