@@ -590,15 +590,22 @@ const steelMat = new THREE.MeshStandardMaterial({ color:0x2a2d33, roughness:0.35
 const screwMat = new THREE.MeshStandardMaterial({ color:0x5a5e66, roughness:0.45, metalness:0.85 });
 function addHW(m){ m.castShadow=true; m.userData={isBolt:true}; boltsGroup.add(m); m.userData.home=m.position.clone(); }
 
-// Carriage bolts: 2 per side through the laminated backrest post + back leg
-const shankGeo = new THREE.CylinderGeometry(0.27,0.27,5.0,12);
-const headGeo  = new THREE.CylinderGeometry(0.55,0.55,0.4,16);
+// PIVOT carriage bolt — one per side through CR + ER + BR at the seat-back hinge
+const pivY = SEAT_RAIL_CY, pivZ = backrestZ(SEAT_RAIL_CY);
+const shankGeo = new THREE.CylinderGeometry(0.30,0.30, 7.2, 14);
+const headGeo  = new THREE.CylinderGeometry(0.75,0.75, 0.45, 20);
+const nutGeo   = new THREE.CylinderGeometry(0.60,0.60, 0.5, 6);
 for(const sx of [-1,1]){
-  for(const y of [13.5, 16]){
-    const z = backLegZ(y);
-    const shank = new THREE.Mesh(shankGeo, steelMat); shank.rotation.z = Math.PI/2; shank.position.set(sx*21.6, y, z); addHW(shank);
-    const head  = new THREE.Mesh(headGeo,  steelMat); head.rotation.z  = Math.PI/2; head.position.set(sx*24.05, y, z); addHW(head);
-  }
+  const shank = new THREE.Mesh(shankGeo, steelMat); shank.rotation.z = Math.PI/2; shank.position.set(sx*26.75, pivY, pivZ); addHW(shank);
+  const head  = new THREE.Mesh(headGeo,  steelMat); head.rotation.z  = Math.PI/2; head.position.set(sx*30.4, pivY, pivZ); addHW(head);   // domed head, outboard
+  const nut   = new THREE.Mesh(nutGeo,   steelMat); nut.rotation.z   = Math.PI/2; nut.position.set(sx*23.1, pivY, pivZ); addHW(nut);     // nut, inboard
+}
+// Removable LOCK PIN — one per side, drops through the post stub + rear beam K (pull to fold)
+const pinGeo = new THREE.CylinderGeometry(0.26,0.26, 5.5, 12);
+const pinHeadGeo = new THREE.TorusGeometry(0.6, 0.18, 8, 16);
+for(const sx of [-1,1]){
+  const pin = new THREE.Mesh(pinGeo, steelMat); pin.position.set(sx*BACKREST_X, BEAM_Y+1, beamCZ); addHW(pin);
+  const ring = new THREE.Mesh(pinHeadGeo, steelMat); ring.rotation.x = Math.PI/2; ring.position.set(sx*BACKREST_X, BEAM_Y+4, beamCZ); addHW(ring);
 }
 
 // Countersunk screw heads on the visible face-screwed joints
