@@ -171,6 +171,14 @@
   </div>
 
   <div class="group">
+    <div class="rowflex">
+      <span class="lbl" style="margin:0">Fold backrest down</span>
+      <span class="pct" id="fold-val">upright</span>
+    </div>
+    <input type="range" id="foldslider" min="0" max="100" value="0" step="1" />
+  </div>
+
+  <div class="group">
     <div class="lbl">Part selector</div>
     <select id="partsel"></select>
   </div>
@@ -281,7 +289,7 @@ function strut(x, z0,y0, z1,y1, xThick, profW){
 // below the seat, then reclines back to full height.
 // Backrest posts: rotated 90° so the 3.5" face takes the slats; mounted inboard of the
 // back legs and extended straight down to the (canted) rear cross beam.
-const BACKREST_X = INNER_X - W4/2 - 2;        // outer posts pulled IN 2" so the seat-rail tails clear them
+const BACKREST_X = INNER_X - W4/2 - TH;       // outer posts pulled IN 1.5" → flush against the seat rail (post|rail|leg flush layers)
 const SEAT_REF_Y = 14;                        // backrest line crosses the back leg here (bolted)
 const BEAM_Y = BOT_RAIL_CY;                   // rear beam centre height (= bottom-rail height)
 const REAR_BEAM_Y = BEAM_Y + TH*Math.sin(RCL) - (W4/2)*Math.cos(RCL); // posts run down to the beam's lower edge (face-mounted)
@@ -297,7 +305,8 @@ const backrestZ = (y) => backrest.z0 + (y - backrest.y0) *
 const RCL_N = { y: Math.sin(RCL), z: Math.cos(RCL) };  // recline (front-face) normal
 // Z of the backrest post's seat-side (front) face at height y — rails butt to this
 const postFrontZ = (y) => backrestZ(y) + (TH/2)*Math.cos(RCL);
-const SLAT_W = 2*INNER_X;                              // 45″ — slats tuck between the legs
+const SLAT_W = 2*INNER_X;                              // seat slats tuck between the legs
+const BACK_SLAT_W = 2*(LEG_X - W6/2) - 1;             // back slats nest BETWEEN the arms (so they fold down)
 
 /* =====================================================================
    PART DEFINITIONS
@@ -399,8 +408,8 @@ for(const [side,sx,rx] of [['left',-LEG_X,-RAIL_X],['right',LEG_X,RAIL_X]]){
     const t  = sLo + i*step;
     const cy = backrest.y0 + t*dirY + off*nY;
     const cz = backrest.z0 + t*dirZ + off*nZ;
-    add('back-slat-'+(i+1),'Backrest slat '+(i+1),'2x4','2×4 · 45″',
-        [SLAT_W, W4, TH], [0, cy, cz], -RCL);
+    add('back-slat-'+(i+1),'Backrest slat '+(i+1),'2x4','2×4 · '+BACK_SLAT_W.toFixed(0)+'″ (nests between arms)',
+        [BACK_SLAT_W, W4, TH], [0, cy, cz], -RCL);
   }
 }
 
@@ -560,6 +569,8 @@ for(const def of partDefs){
     partName: def.name, label: def.label, lumber: def.lumber, dim: def.dim,
     key: keyOf(def.name), id: shortId(def.name), angles: angleOf(def.name),
     home: mesh.position.clone(), isBolt:false, def: def,
+    baseRotX: def.rotX || 0,                                   // for the fold
+    foldable: /^(backrest-|back-slat-)/.test(def.name),        // backrest assembly hinges
     baseColor: mesh.material.color.getHex()
   };
   benchGroup.add(mesh);
@@ -611,12 +622,25 @@ let mode = 'assembled';        // 'assembled' | 'exploded' | 'individual'
 let explodeFrac = 0;           // 0..1
 let selected = 'all';
 let showBolts = true;
-
+let foldAngle = 0;                              // 0 = upright; grows as the backrest folds forward
+const FOLD_MAX = THREE.MathUtils.degToRad(108); // folded ≈ flat onto the seat
+// hinge: bolt through BR + ER + CR at the seat-back corner
+let PIVOT_Y = 0, PIVOT_Z = 0;                   // set after geometry is known
+const _v = new THREE.Vector3();
+function foldHome(m){
+  // rotate the part's home about the hinge axis (X) at (PIVOT_Y,PIVOT_Z) by foldAngle
+  const h = m.userData.home;
+  if(!m.userData.foldable || foldAngle===0) return _v.copy(h);
+  const c=Math.cos(foldAngle), s=Math.sin(foldAngle);
+  const dy=h.y-PIVOT_Y, dz=h.z-PIVOT_Z;
+  return _v.set(h.x, PIVOT_Y + dy*c - dz*s, PIVOT_Z + dy*s + dz*c);
+}
 function applyExplode(){
   const scale = 1 + explodeFrac * 1.9;
   for(let i=0;i<parts.length;i++){
     const m = parts[i];
-    m.position.copy(m.userData.home).sub(EXPLODE_CENTER).multiplyScalar(scale).add(EXPLODE_CENTER);
+    m.position.copy(foldHome(m)).sub(EXPLODE_CENTER).multiplyScalar(scale).add(EXPLODE_CENTER);
+    m.rotation.x = m.userData.baseRotX + (m.userData.foldable ? foldAngle : 0);
     labels[i].position.copy(m.position);      // letter follows its board
   }
   for(const m of boltsGroup.children){
@@ -954,6 +978,18 @@ function setBenchOffset(d){
 }
 const posslider = document.getElementById('posslider');
 if(posslider) posslider.oninput = ()=> setBenchOffset(+posslider.value);
+
+// ---- Fold backrest: hinge through BR + ER + CR; pull the pin and it folds onto the seat ----
+PIVOT_Y = SEAT_RAIL_CY;
+PIVOT_Z = backrestZ(SEAT_RAIL_CY);
+function setFold(pct){
+  foldAngle = FOLD_MAX * pct/100;
+  applyExplode();
+  const el=document.getElementById('fold-val');
+  if(el) el.textContent = pct==0 ? 'upright' : (pct>=100 ? 'folded flat' : pct+'%');
+}
+const foldslider = document.getElementById('foldslider');
+if(foldslider) foldslider.oninput = ()=> setFold(+foldslider.value);
 
 // init
 setBenchOffset(posslider ? +posslider.value : 4);
