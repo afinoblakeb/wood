@@ -171,14 +171,6 @@
   </div>
 
   <div class="group">
-    <div class="rowflex">
-      <span class="lbl" style="margin:0">Fold backrest down</span>
-      <span class="pct" id="fold-val">upright</span>
-    </div>
-    <input type="range" id="foldslider" min="0" max="100" value="0" step="1" />
-  </div>
-
-  <div class="group">
     <div class="lbl">Part selector</div>
     <select id="partsel"></select>
   </div>
@@ -373,9 +365,9 @@ for(const [side,bx] of [['left',-BACKREST_X],['center',0],['right',BACKREST_X]])
 for(const [side,sx,rx] of [['left',-LEG_X,-RAIL_X],['right',LEG_X,RAIL_X]]){
   // Flat armrest: caps the A from the front leg, over the back leg, to the backrest
   const armFront = frontLegZ(ARM_CY) + W4/2 + 4.5;   // longer front overhang (reaches past seat)
-  const armBack  = backLegZ(LEG_TOP_Y) - W4/2;       // STOP at the back leg — frees the backrest to fold; arm out ½″ for clearance
+  const armBack  = backrestZ(ARM_CY) - W4/2;         // reaches back to tie into the backrest post (rigid)
   add('armrest-'+side,'Armrest ('+side+')','2x6','2×6 · '+(armFront-armBack).toFixed(1)+'″(flat)',
-      [W6, TH, armFront-armBack], [sx + Math.sign(sx)*0.5, ARM_CY, (armFront+armBack)/2]);
+      [W6, TH, armFront-armBack], [sx, ARM_CY, (armFront+armBack)/2]);
   // Seat rail → TREE TAIL: seat slats land on the front; the rail runs back to pinch the trunk
   const srF = frontLegZ(SEAT_RAIL_CY), srB = backrestZ(H) - 32;
   add('seatrail-'+side,'Seat rail / tree tail ('+side+')','2x4','2×4 · '+(srF-srB).toFixed(1)+'″ (tree tail)',
@@ -590,28 +582,23 @@ const steelMat = new THREE.MeshStandardMaterial({ color:0x2a2d33, roughness:0.35
 const screwMat = new THREE.MeshStandardMaterial({ color:0x5a5e66, roughness:0.45, metalness:0.85 });
 function addHW(m){ m.castShadow=true; m.userData={isBolt:true}; boltsGroup.add(m); m.userData.home=m.position.clone(); }
 
-// FLUSH LOCKING HINGE — one per side, mortised onto the OUTER face of the seat-back
-// corner (post CR/CL meets seat rail).  Two leaves + a barrel knuckle on the pivot
-// axis + a tension knob: loosen the knob, the backrest folds forward onto the seat;
-// tighten to lock it at any angle.  Replaces the old pivot bolt + drop-pin.
-const pivY = SEAT_RAIL_CY, pivZ = backrestZ(SEAT_RAIL_CY);
-const postRotX = Math.atan2(backrest.z1 - backrest.z0, backrest.y1 - backrest.y0);
-const HINGE_X  = BACKREST_X + W4/2;             // outer face of the post (=27)
-const knuckGeo = new THREE.CylinderGeometry(0.55,0.55, 1.8, 18);  // barrel
-const knobGeo  = new THREE.CylinderGeometry(0.45,0.45, 1.1, 22);  // tension knob
-const leafGeo  = new THREE.BoxGeometry(0.18, 8.0, 1.7);           // flat steel leaf
-const railLeafGeo = new THREE.BoxGeometry(0.18, 1.7, 8.0);
+// 4 CARRIAGE BOLTS — 2 per side, clamp each outer backrest post to its back leg
+// where they cross below the seat.  Domed carriage head + washer OUTBOARD, washer +
+// butterfly (wing) nut INBOARD.  (8 washers, 4 wing nuts total — matches the hardware
+// bought.)  A future hinge would replace these at the same seat-back corner.
+const shankGeo = new THREE.CylinderGeometry(0.20,0.20, 4.2, 14);   // 5/16" × ~4" bolt
+const headGeo  = new THREE.CylinderGeometry(0.55,0.55, 0.30, 18);  // domed carriage head
+const washGeo  = new THREE.CylinderGeometry(0.45,0.45, 0.10, 18);  // flat washer
+const wingGeo  = new THREE.BoxGeometry(1.4, 0.7, 0.35);            // butterfly/wing nut (simplified)
 for(const sx of [-1,1]){
-  const hx = sx*(HINGE_X + 0.10);               // plate sits flush on the outer face
-  // barrel knuckle on the pivot axis (X)
-  const k = new THREE.Mesh(knuckGeo, steelMat); k.rotation.z = Math.PI/2; k.position.set(hx, pivY, pivZ); addHW(k);
-  // tension lock knob, outboard of the barrel
-  const knob = new THREE.Mesh(knobGeo, steelMat); knob.rotation.z = Math.PI/2; knob.position.set(sx*(HINGE_X+1.3), pivY, pivZ); addHW(knob);
-  // post leaf — up the reclined backrest post
-  const pl = new THREE.Mesh(leafGeo, steelMat); pl.rotation.x = postRotX;
-  pl.position.set(hx, pivY + 4*Math.cos(postRotX), pivZ + 4*Math.sin(postRotX)); addHW(pl);
-  // rail leaf — forward along the (horizontal) seat rail
-  const rl = new THREE.Mesh(railLeafGeo, steelMat); rl.position.set(hx, pivY, pivZ + 4.0); addHW(rl);
+  for(const by of [12, 16]){                       // two bolts up the post↔leg overlap
+    const cz = (backLegZ(by) + backrestZ(by))/2;   // through the lapped joint
+    const shank = new THREE.Mesh(shankGeo, steelMat); shank.rotation.z=Math.PI/2; shank.position.set(sx*24.25, by, cz); addHW(shank);
+    const head  = new THREE.Mesh(headGeo,  steelMat); head.rotation.z =Math.PI/2; head.position.set(sx*26.4, by, cz); addHW(head);  // outboard
+    const wo    = new THREE.Mesh(washGeo,  steelMat); wo.rotation.z   =Math.PI/2; wo.position.set(sx*26.1, by, cz); addHW(wo);       // washer under head
+    const wi    = new THREE.Mesh(washGeo,  steelMat); wi.rotation.z   =Math.PI/2; wi.position.set(sx*22.4, by, cz); addHW(wi);       // washer under nut
+    const wing  = new THREE.Mesh(wingGeo,  steelMat); wing.position.set(sx*22.0, by, cz); addHW(wing);                                // wing nut, inboard
+  }
 }
 
 // Countersunk screw heads on the visible face-screwed joints
