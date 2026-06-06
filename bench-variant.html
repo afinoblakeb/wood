@@ -207,8 +207,11 @@
 <script type="module">
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
 const EASE = 0.12;   // ⅛″ eased/routed edge radius on slats & armrests
+// Optional add-on — load it dynamically so a CDN miss can't blank the whole page.
+let RoundedBoxGeometry = null;
+try { ({ RoundedBoxGeometry } = await import('three/addons/geometries/RoundedBoxGeometry.js')); }
+catch(e){ console.warn('RoundedBoxGeometry unavailable — using square edges', e); }
 
 /* =====================================================================
    PARAMETRIC DIMENSIONS  (all values in INCHES; 1 unit = 1 inch)
@@ -535,8 +538,8 @@ for(const def of partDefs){
     geo.setAttribute('position', new THREE.Float32BufferAttribute(pos,3));
     geo.computeVertexNormals();
     mat.side = THREE.DoubleSide;
-  } else if(/^(seat-slat|back-slat|armrest)/.test(def.name)){
-    // VARIANT: routed (eased) edges on the slats & armrests
+  } else if(RoundedBoxGeometry && /^(seat-slat|back-slat|armrest)/.test(def.name)){
+    // VARIANT: routed (eased) edges on the slats & armrests (if the add-on loaded)
     geo = new RoundedBoxGeometry(def.size[0], def.size[1], def.size[2], 3, EASE);
   } else {
     geo = new THREE.BoxGeometry(def.size[0], def.size[1], def.size[2]);
