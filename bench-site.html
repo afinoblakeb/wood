@@ -373,9 +373,9 @@ for(const [side,bx] of [['left',-BACKREST_X],['center',0],['right',BACKREST_X]])
 for(const [side,sx,rx] of [['left',-LEG_X,-RAIL_X],['right',LEG_X,RAIL_X]]){
   // Flat armrest: caps the A from the front leg, over the back leg, to the backrest
   const armFront = frontLegZ(ARM_CY) + W4/2 + 4.5;   // longer front overhang (reaches past seat)
-  const armBack  = backrestZ(ARM_CY) + TH/2;        // butts into the backrest
+  const armBack  = backLegZ(LEG_TOP_Y) - W4/2;       // STOP at the back leg — frees the backrest to fold; arm out ½″ for clearance
   add('armrest-'+side,'Armrest ('+side+')','2x6','2×6 · '+(armFront-armBack).toFixed(1)+'″(flat)',
-      [W6, TH, armFront-armBack], [sx, ARM_CY, (armFront+armBack)/2]);
+      [W6, TH, armFront-armBack], [sx + Math.sign(sx)*0.5, ARM_CY, (armFront+armBack)/2]);
   // Seat rail → TREE TAIL: seat slats land on the front; the rail runs back to pinch the trunk
   const srF = frontLegZ(SEAT_RAIL_CY), srB = backrestZ(H) - 32;
   add('seatrail-'+side,'Seat rail / tree tail ('+side+')','2x4','2×4 · '+(srF-srB).toFixed(1)+'″ (tree tail)',
@@ -581,7 +581,7 @@ for(const def of partDefs){
   labels.push(lbl);
 }
 
-// ---- Fasteners: 4 carriage bolts (backrest ↔ back leg) + countersunk screw heads ----
+// ---- Fasteners: 2 flush locking hinges (backrest folds onto the seat) + screw heads ----
 // (Frame joints use hidden pocket-hole screws → no visible heads; back slats are
 //  screwed from behind → heads hidden. Only the face-screwed joints show heads.)
 const boltsGroup = new THREE.Group();
@@ -590,22 +590,28 @@ const steelMat = new THREE.MeshStandardMaterial({ color:0x2a2d33, roughness:0.35
 const screwMat = new THREE.MeshStandardMaterial({ color:0x5a5e66, roughness:0.45, metalness:0.85 });
 function addHW(m){ m.castShadow=true; m.userData={isBolt:true}; boltsGroup.add(m); m.userData.home=m.position.clone(); }
 
-// PIVOT carriage bolt — one per side through CR + ER + BR at the seat-back hinge
+// FLUSH LOCKING HINGE — one per side, mortised onto the OUTER face of the seat-back
+// corner (post CR/CL meets seat rail).  Two leaves + a barrel knuckle on the pivot
+// axis + a tension knob: loosen the knob, the backrest folds forward onto the seat;
+// tighten to lock it at any angle.  Replaces the old pivot bolt + drop-pin.
 const pivY = SEAT_RAIL_CY, pivZ = backrestZ(SEAT_RAIL_CY);
-const shankGeo = new THREE.CylinderGeometry(0.30,0.30, 7.2, 14);
-const headGeo  = new THREE.CylinderGeometry(0.75,0.75, 0.45, 20);
-const nutGeo   = new THREE.CylinderGeometry(0.60,0.60, 0.5, 6);
+const postRotX = Math.atan2(backrest.z1 - backrest.z0, backrest.y1 - backrest.y0);
+const HINGE_X  = BACKREST_X + W4/2;             // outer face of the post (=27)
+const knuckGeo = new THREE.CylinderGeometry(0.55,0.55, 1.8, 18);  // barrel
+const knobGeo  = new THREE.CylinderGeometry(0.45,0.45, 1.1, 22);  // tension knob
+const leafGeo  = new THREE.BoxGeometry(0.18, 8.0, 1.7);           // flat steel leaf
+const railLeafGeo = new THREE.BoxGeometry(0.18, 1.7, 8.0);
 for(const sx of [-1,1]){
-  const shank = new THREE.Mesh(shankGeo, steelMat); shank.rotation.z = Math.PI/2; shank.position.set(sx*26.75, pivY, pivZ); addHW(shank);
-  const head  = new THREE.Mesh(headGeo,  steelMat); head.rotation.z  = Math.PI/2; head.position.set(sx*30.4, pivY, pivZ); addHW(head);   // domed head, outboard
-  const nut   = new THREE.Mesh(nutGeo,   steelMat); nut.rotation.z   = Math.PI/2; nut.position.set(sx*23.1, pivY, pivZ); addHW(nut);     // nut, inboard
-}
-// Removable LOCK PIN — one per side, drops through the post stub + rear beam K (pull to fold)
-const pinGeo = new THREE.CylinderGeometry(0.26,0.26, 5.5, 12);
-const pinHeadGeo = new THREE.TorusGeometry(0.6, 0.18, 8, 16);
-for(const sx of [-1,1]){
-  const pin = new THREE.Mesh(pinGeo, steelMat); pin.position.set(sx*BACKREST_X, BEAM_Y+1, beamCZ); addHW(pin);
-  const ring = new THREE.Mesh(pinHeadGeo, steelMat); ring.rotation.x = Math.PI/2; ring.position.set(sx*BACKREST_X, BEAM_Y+4, beamCZ); addHW(ring);
+  const hx = sx*(HINGE_X + 0.10);               // plate sits flush on the outer face
+  // barrel knuckle on the pivot axis (X)
+  const k = new THREE.Mesh(knuckGeo, steelMat); k.rotation.z = Math.PI/2; k.position.set(hx, pivY, pivZ); addHW(k);
+  // tension lock knob, outboard of the barrel
+  const knob = new THREE.Mesh(knobGeo, steelMat); knob.rotation.z = Math.PI/2; knob.position.set(sx*(HINGE_X+1.3), pivY, pivZ); addHW(knob);
+  // post leaf — up the reclined backrest post
+  const pl = new THREE.Mesh(leafGeo, steelMat); pl.rotation.x = postRotX;
+  pl.position.set(hx, pivY + 4*Math.cos(postRotX), pivZ + 4*Math.sin(postRotX)); addHW(pl);
+  // rail leaf — forward along the (horizontal) seat rail
+  const rl = new THREE.Mesh(railLeafGeo, steelMat); rl.position.set(hx, pivY, pivZ + 4.0); addHW(rl);
 }
 
 // Countersunk screw heads on the visible face-screwed joints
@@ -631,7 +637,7 @@ let selected = 'all';
 let showBolts = true;
 let foldAngle = 0;                              // 0 = upright; grows as the backrest folds forward
 const FOLD_MAX = THREE.MathUtils.degToRad(108); // folded ≈ flat onto the seat
-// hinge: bolt through BR + ER + CR at the seat-back corner
+// hinge: flush locking hinges mortised onto CR/CL at the seat-back corner
 let PIVOT_Y = 0, PIVOT_Z = 0;                   // set after geometry is known
 const _v = new THREE.Vector3();
 function foldHome(m){
@@ -986,7 +992,7 @@ function setBenchOffset(d){
 const posslider = document.getElementById('posslider');
 if(posslider) posslider.oninput = ()=> setBenchOffset(+posslider.value);
 
-// ---- Fold backrest: hinge through BR + ER + CR; pull the pin and it folds onto the seat ----
+// ---- Fold backrest: flush locking hinges at CR/CL; loosen the knob, fold onto the seat ----
 PIVOT_Y = SEAT_RAIL_CY;
 PIVOT_Z = backrestZ(SEAT_RAIL_CY);
 function setFold(pct){
