@@ -248,6 +248,7 @@ const LUMBER = {
 };
 const TH = LUMBER['2x4'].a;   // 1.5  (2x thickness)
 const W4 = LUMBER['2x4'].b;   // 3.5  (2x4 width)
+const W6 = LUMBER['2x6'].b;   // 5.5  (2x6 width — armrests)
 
 // Derived geometry helpers ------------------------------------------------
 const rad = THREE.MathUtils.degToRad;
@@ -364,8 +365,8 @@ for(const [side,sx,rx] of [['left',-LEG_X,-RAIL_X],['right',LEG_X,RAIL_X]]){
   // Flat armrest: caps the A from the front leg, over the back leg, to the backrest
   const armFront = frontLegZ(ARM_CY) + W4/2 + 4.5;   // longer front overhang (reaches past seat)
   const armBack  = backrestZ(ARM_CY) + TH/2;        // butts into the backrest
-  add('armrest-'+side,'Armrest ('+side+')','2x4','2×4 · '+(armFront-armBack).toFixed(1)+'″(flat)',
-      [W4, TH, armFront-armBack], [sx, ARM_CY, (armFront+armBack)/2]);
+  add('armrest-'+side,'Armrest ('+side+')','2x6','2×6 · '+(armFront-armBack).toFixed(1)+'″(flat)',
+      [W6, TH, armFront-armBack], [sx, ARM_CY, (armFront+armBack)/2]);
   // Seat rail → TREE TAIL: seat slats land on the front; the rail runs back to pinch the trunk
   const srF = frontLegZ(SEAT_RAIL_CY), srB = backrestZ(H) - 32;
   add('seatrail-'+side,'Seat rail / tree tail ('+side+')','2x4','2×4 · '+(srF-srB).toFixed(1)+'″ (tree tail)',
