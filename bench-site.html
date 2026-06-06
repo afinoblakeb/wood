@@ -370,9 +370,9 @@ for(const [side,sx,rx] of [['left',-LEG_X,-RAIL_X],['right',LEG_X,RAIL_X]]){
   const srF = frontLegZ(SEAT_RAIL_CY), srB = backrestZ(H) - 32;
   add('seatrail-'+side,'Seat rail / tree tail ('+side+')','2x4','2×4 · '+(srF-srB).toFixed(1)+'″ (tree tail)',
       [TH, W4, srF-srB], [rx, SEAT_RAIL_CY, (srF+srB)/2]);
-  // Bottom rail (short) — butts the rear cross beam (no longer the tail)
-  const brF = frontLegZ(BOT_RAIL_CY), brB = backrestZ(BEAM_Y) + (3*TH/2)*Math.cos(RCL);
-  add('bottomrail-'+side,'Bottom rail ('+side+')','2x4','2×4 · '+(brF-brB).toFixed(1)+'″',
+  // Bottom rail — runs front leg → BACK LEG (laps both), the A-frame's lower crossbar (sturdy)
+  const brF = frontLegZ(BOT_RAIL_CY), brB = backLegZ(BOT_RAIL_CY);
+  add('bottomrail-'+side,'Bottom rail ('+side+')','2x4','2×4 · '+(brF-brB).toFixed(1)+'″ (laps front & back legs)',
       [TH, W4, brF-brB], [rx, BOT_RAIL_CY, (brF+brB)/2]);
 }
 
