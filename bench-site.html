@@ -992,7 +992,8 @@ scene.add(tree);
 controls.target.set(0, 14, -10);
 
 // ---- Fore/aft position slider: slide along the slope; SEAT-RAIL tails grow/shrink to reach the tree ----
-const tailMeshes = parts.filter(p=>p.userData.partName.startsWith('seatrail'));
+// only the two SIDE seat rails are tree tails — NOT seatrail-center (EC), which stops at CC
+const tailMeshes = parts.filter(p=>/^seatrail-(left|right)$/.test(p.userData.partName));
 const BR_FRONT = frontLegZ(SEAT_RAIL_CY);  // tail front end (attaches to front leg at seat height)
 const ANCHOR_Z = -41;                      // fixed world z where the tails grip the trunk
 function setBenchOffset(d){
