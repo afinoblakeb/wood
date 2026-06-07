@@ -348,6 +348,15 @@ const GROUND_SLOPE = Math.atan(11/30);            // measured: 11″ drop over 3
 const FRONT_GROUND_DROP = (2*FOOT_HALF)*Math.tan(GROUND_SLOPE); // ≈8.8″ over the 24″ footprint
 const FRONT_FOOT_Y = -(FRONT_GROUND_DROP + 1.5);  // front legs run down to the low front ground
 
+// ---- Front-leg plane (shared by center leg AC, beam J, bottom rails F, center rail EC) ----
+// AC sits in this plane (1.5″ back); J laminates flat on AC's FRONT face; F's fronts and EC's
+// front are cut to the same lean so everything seats flush.
+const aplaneZ = (y)=> FOOT_HALF + (y-FRONT_FOOT_Y)*(frontLegZ(LEG_TOP_Y)-FOOT_HALF)/(LEG_TOP_Y-FRONT_FOOT_Y);
+const LEAN    = Math.atan2(frontLegZ(LEG_TOP_Y)-FOOT_HALF, LEG_TOP_Y-FRONT_FOOT_Y);  // ≈ −8.4° off vertical
+const ACBACK  = 1.5;                                            // AC set back from the leg line
+const ACfront = (y)=> aplaneZ(y) - ACBACK + (W4/2)/Math.cos(LEAN);  // AC's front face (J & F mate this)
+const ACbackF = (y)=> aplaneZ(y) - ACBACK - (W4/2)/Math.cos(LEAN);  // AC's back face (EC mates this)
+
 // ---- Symmetric A legs (front legs lengthened for the slope) ----
 for(const [side,sx] of [['left',-LEG_X],['right',LEG_X]]){
   addLeg('leg-front-'+side,'Front leg ('+side+')', sx, FOOT_HALF,  frontLegZ(LEG_TOP_Y), FRONT_FOOT_Y);
@@ -373,9 +382,19 @@ for(const [side,sx,rx] of [['left',-LEG_X,-RAIL_X],['right',LEG_X,RAIL_X]]){
   add('seatrail-'+side,'Seat rail / tree tail ('+side+')','2x4','2×4 · '+(srF-srB).toFixed(1)+'″ (tree tail)',
       [TH, W4, srF-srB], [rx, SEAT_RAIL_CY, (srF+srB)/2]);
   // Bottom rail — runs front leg → BACK LEG (laps both), the A-frame's lower crossbar (sturdy)
-  const brF = frontLegZ(BOT_RAIL_CY) - TH/2, brB = backLegZ(BOT_RAIL_CY);  // front end butts the back face of the wide beam J
-  add('bottomrail-'+side,'Bottom rail ('+side+')','2x4','2×4 · '+(brF-brB).toFixed(1)+'″ (laps legs; butts beam J)',
-      [TH, W4, brF-brB], [rx, BOT_RAIL_CY, (brF+brB)/2]);
+  // Bottom rail: ANGLED front (cut to the 8.4° lean) seats flush on the canted beam J;
+  // square rear laps the back leg.
+  const brB = backLegZ(BOT_RAIL_CY);
+  const fyB = BOT_RAIL_CY - W4/2, fyT = BOT_RAIL_CY + W4/2;  // 5.75 → 9.25 (on edge)
+  const fhx = TH/2;
+  const fW = [
+    [rx-fhx, fyB, ACfront(fyB)],[rx+fhx, fyB, ACfront(fyB)],[rx+fhx, fyT, ACfront(fyT)],[rx-fhx, fyT, ACfront(fyT)], // angled front (on J)
+    [rx-fhx, fyB, brB],[rx+fhx, fyB, brB],[rx+fhx, fyT, brB],[rx-fhx, fyT, brB],                                       // square rear (back leg)
+  ];
+  const fC = fW.reduce((a,p)=>[a[0]+p[0],a[1]+p[1],a[2]+p[2]],[0,0,0]).map(s=>s/8);
+  const fLen = ACfront(BOT_RAIL_CY) - brB;
+  addVerts('bottomrail-'+side,'Bottom rail ('+side+')','2x4','2×4 · '+fLen.toFixed(1)+'″ (laps legs; front cut 8.4° on J)',
+           fW.map(p=>[p[0]-fC[0],p[1]-fC[1],p[2]-fC[2]]), fC);
 }
 
 // ---- Seat slats (2x4 flat, left-to-right, on top of the seat rails) ----
@@ -394,28 +413,22 @@ for(const [side,sx,rx] of [['left',-LEG_X,-RAIL_X],['right',LEG_X,RAIL_X]]){
 // EC (center seat rail) runs back from AC to the centre post; its front end is cut at the
 // front-leg angle (≈8.4°, same as AR) to seat against the leg's back.
 {
-  // The front-leg (A) line in the Z-Y plane: foot (FOOT_HALF, FRONT_FOOT_Y) → top (frontLegZ(LEG_TOP_Y), LEG_TOP_Y)
-  const Az0=FOOT_HALF, Ay0=FRONT_FOOT_Y, Az1=frontLegZ(LEG_TOP_Y), Ay1=LEG_TOP_Y;
-  const aplaneZ=(y)=> Az0 + (y-Ay0)*(Az1-Az0)/(Ay1-Ay0);
-  const lean = Math.atan2(Az1-Az0, Ay1-Ay0);          // ≈ −8.4° off vertical (matches AL/AR)
   const G1_bottom = SEAT_TOP - TH;                     // 15.5 — underside of the seat slats (G1)
-  const ACBACK = 1.5;                                  // set back so a single beam J passes in front
   // AC — center front leg, parallel to AL/AR (1.5″ behind), foot on the ground up to G1
-  const cl = strut(0, aplaneZ(Ay0)-ACBACK,Ay0, aplaneZ(G1_bottom)-ACBACK,G1_bottom, TH, W4);
+  const cl = strut(0, aplaneZ(FRONT_FOOT_Y)-ACBACK,FRONT_FOOT_Y, aplaneZ(G1_bottom)-ACBACK,G1_bottom, TH, W4);
   add('leg-front-center','Center front leg (AC)','2x4','2×4 · '+cl.size[1].toFixed(1)+'″ (∥ AL/AR, 1.5″ back; foot cut on site)',
       cl.size, cl.pos, cl.rotX);
   // EC — center seat rail: ANGLED front end (cut to the 8.4° leg lean) seats flat on AC's
   // back; rear end stops SQUARE against the centre post CC (does NOT tail to the tree).
-  const ACback = (y)=> aplaneZ(y) - ACBACK - (W4/2)/Math.cos(lean);  // AC's back face at height y
   const ecYB = SEAT_RAIL_CY - W4/2, ecYT = SEAT_RAIL_CY + W4/2;      // 12 → 15.5 (on edge)
   const ecZR = postFrontZ(SEAT_RAIL_CY);                             // square rear, butts CC's front face
   const ehx = TH/2;
   const ecW = [
-    [-ehx, ecYB, ACback(ecYB)],[ehx, ecYB, ACback(ecYB)],[ehx, ecYT, ACback(ecYT)],[-ehx, ecYT, ACback(ecYT)], // slanted front (on AC)
-    [-ehx, ecYB, ecZR],[ehx, ecYB, ecZR],[ehx, ecYT, ecZR],[-ehx, ecYT, ecZR],                                  // square rear (at CC)
+    [-ehx, ecYB, ACbackF(ecYB)],[ehx, ecYB, ACbackF(ecYB)],[ehx, ecYT, ACbackF(ecYT)],[-ehx, ecYT, ACbackF(ecYT)], // slanted front (on AC)
+    [-ehx, ecYB, ecZR],[ehx, ecYB, ecZR],[ehx, ecYT, ecZR],[-ehx, ecYT, ecZR],                                       // square rear (at CC)
   ];
   const ecC = ecW.reduce((a,p)=>[a[0]+p[0],a[1]+p[1],a[2]+p[2]],[0,0,0]).map(s=>s/8);
-  const ecLen = ACback(SEAT_RAIL_CY) - ecZR;
+  const ecLen = ACbackF(SEAT_RAIL_CY) - ecZR;
   addVerts('seatrail-center','Center seat rail (EC · angled front to AC, stops at CC)','2x4','2×4 · '+ecLen.toFixed(1)+'″ (front cut 8.4°)',
            ecW.map(p=>[p[0]-ecC[0],p[1]-ecC[1],p[2]-ecC[2]]), ecC);
 }
@@ -440,10 +453,12 @@ for(const [side,sx,rx] of [['left',-LEG_X,-RAIL_X],['right',LEG_X,RAIL_X]]){
 // ---- Two bottom cross beams (front + rear) joining the A-frames ----
 const BEAM_FIT = 2*(RAIL_X - TH/2);   // fit between the tails' inner faces (no crossing)
 // Single continuous front beam J — full width between the leg inner faces (57″, = seat slats);
-// passes in front of AC (1.5″ behind it). Bottom rails butt its back face.
+// CANTED to the 8.4° leg lean so its back face laminates flat on AC's front face.
 const FRONT_BEAM_W = 2*INNER_X;   // 57 — butts the leg inner faces
-add('beam-front','Bottom cross beam – front','2x4','2×4 · '+FRONT_BEAM_W.toFixed(0)+'″',
-    [FRONT_BEAM_W, W4, TH], [0, BOT_RAIL_CY, frontLegZ(BOT_RAIL_CY)]);
+const Jc_z = ACfront(BOT_RAIL_CY) + (TH/2)*Math.cos(LEAN);   // step out along the lean-plane normal
+const Jc_y = BOT_RAIL_CY + (TH/2)*(-Math.sin(LEAN));
+add('beam-front','Bottom cross beam – front','2x4','2×4 · '+FRONT_BEAM_W.toFixed(0)+'″ (canted '+Math.abs(LEAN*180/Math.PI).toFixed(1)+'° flush on AC)',
+    [FRONT_BEAM_W, W4, TH], [0, Jc_y, Jc_z], LEAN);
 // Rear beam: pulled IN toward the seat so its 3.5" face laminates flat against the posts'
 // 3.5" faces; CANTED to the recline; butted on its front by the two bottom rails.
 const beamCZ = backrestZ(BEAM_Y) + TH*Math.cos(RCL);   // beam centre Z (in front of the post line)
