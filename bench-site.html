@@ -404,11 +404,20 @@ for(const [side,sx,rx] of [['left',-LEG_X,-RAIL_X],['right',LEG_X,RAIL_X]]){
   const cl = strut(0, aplaneZ(Ay0)-ACBACK,Ay0, aplaneZ(G1_bottom)-ACBACK,G1_bottom, TH, W4);
   add('leg-front-center','Center front leg (AC)','2x4','2×4 · '+cl.size[1].toFixed(1)+'″ (∥ AL/AR, 1.5″ back; foot cut on site)',
       cl.size, cl.pos, cl.rotX);
-  // EC — center seat rail: from the back face of AC at seat height, back to the centre post
-  const cFront = aplaneZ(SEAT_RAIL_CY) - ACBACK - (W4/2)/Math.cos(lean);  // butts the back face of AC
-  const cRear  = backrestZ(SEAT_RAIL_CY) + 1.0;        // butt just in front of the centre post
-  add('seatrail-center','Center seat rail (EC · front cut 8.4° to AC)','2x4','2×4 · '+(cFront-cRear).toFixed(1)+'″',
-      [TH, W4, cFront-cRear], [0, SEAT_RAIL_CY, (cFront+cRear)/2]);
+  // EC — center seat rail: ANGLED front end (cut to the 8.4° leg lean) seats flat on AC's
+  // back; rear end stops SQUARE against the centre post CC (does NOT tail to the tree).
+  const ACback = (y)=> aplaneZ(y) - ACBACK - (W4/2)/Math.cos(lean);  // AC's back face at height y
+  const ecYB = SEAT_RAIL_CY - W4/2, ecYT = SEAT_RAIL_CY + W4/2;      // 12 → 15.5 (on edge)
+  const ecZR = postFrontZ(SEAT_RAIL_CY);                             // square rear, butts CC's front face
+  const ehx = TH/2;
+  const ecW = [
+    [-ehx, ecYB, ACback(ecYB)],[ehx, ecYB, ACback(ecYB)],[ehx, ecYT, ACback(ecYT)],[-ehx, ecYT, ACback(ecYT)], // slanted front (on AC)
+    [-ehx, ecYB, ecZR],[ehx, ecYB, ecZR],[ehx, ecYT, ecZR],[-ehx, ecYT, ecZR],                                  // square rear (at CC)
+  ];
+  const ecC = ecW.reduce((a,p)=>[a[0]+p[0],a[1]+p[1],a[2]+p[2]],[0,0,0]).map(s=>s/8);
+  const ecLen = ACback(SEAT_RAIL_CY) - ecZR;
+  addVerts('seatrail-center','Center seat rail (EC · angled front to AC, stops at CC)','2x4','2×4 · '+ecLen.toFixed(1)+'″ (front cut 8.4°)',
+           ecW.map(p=>[p[0]-ecC[0],p[1]-ecC[1],p[2]-ecC[2]]), ecC);
 }
 
 // ---- Back slats (2x4, left-to-right, on the seat-side face of the backrest) ----
