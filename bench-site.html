@@ -298,7 +298,7 @@ const RCL_N = { y: Math.sin(RCL), z: Math.cos(RCL) };  // recline (front-face) n
 // Z of the backrest post's seat-side (front) face at height y — rails butt to this
 const postFrontZ = (y) => backrestZ(y) + (TH/2)*Math.cos(RCL);
 const SLAT_W = 2*INNER_X;                              // seat slats tuck between the legs
-const BACK_SLAT_W = 2*(LEG_X - W6/2) - 1;             // back slats nest BETWEEN the arms (so they fold down)
+const BACK_SLAT_W = SLAT_W;                            // back slats SAME length as seat slats (G1 = H1)
 
 /* =====================================================================
    PART DEFINITIONS
@@ -365,7 +365,7 @@ for(const [side,bx] of [['left',-BACKREST_X],['center',0],['right',BACKREST_X]])
 for(const [side,sx,rx] of [['left',-LEG_X,-RAIL_X],['right',LEG_X,RAIL_X]]){
   // Flat armrest: caps the A from the front leg, over the back leg, to the backrest
   const armFront = frontLegZ(ARM_CY) + W4/2 + 4.5;   // longer front overhang (reaches past seat)
-  const armBack  = backrestZ(ARM_CY) - W4/2;         // reaches back to tie into the backrest post (rigid)
+  const armBack  = backLegZ(LEG_TOP_Y) - W4/2;       // stop at the back leg so the full-width back slats clear
   add('armrest-'+side,'Armrest ('+side+')','2x6','2×6 · '+(armFront-armBack).toFixed(1)+'″(flat)',
       [W6, TH, armFront-armBack], [sx, ARM_CY, (armFront+armBack)/2]);
   // Seat rail → TREE TAIL: seat slats land on the front; the rail runs back to pinch the trunk
@@ -388,19 +388,25 @@ for(const [side,sx,rx] of [['left',-LEG_X,-RAIL_X],['right',LEG_X,RAIL_X]]){
   }
 }
 
-// ---- Center support (sag fix): center seat rail at x=0 carried by a center leg ----
-// Halves the ~54″ flat-slat span. Rear end butts the center backrest post; front end is
-// carried by a short center leg down to the sloped ground (foot scribed/cut to fit on site).
+// ---- Center support (sag fix): a center FRONT leg in the A-plane + a center seat rail ----
+// ?C/AC (center leg) lies in the SAME plane as the front legs AL/AR and runs up to the
+// front seat slat G1. EC (center seat rail) runs back from the leg to the centre post; its
+// front end is cut at the front-leg angle (≈8.4°, same as AR) to seat against the leg's back.
 {
-  const cF = frontLegZ(SEAT_RAIL_CY);                 // 9.08 — front (matches side rails)
-  const cR = backrestZ(SEAT_RAIL_CY) + 1.0;           // butt just in front of the center post
-  add('seatrail-center','Center seat rail (sag support)','2x4','2×4 · '+(cF-cR).toFixed(1)+'″',
-      [TH, W4, cF-cR], [0, SEAT_RAIL_CY, (cF+cR)/2]);
-  const CTR_Z = 5;                                    // forward of both cross beams & the posts
-  const groundY = FRONT_FOOT_Y*(CTR_Z + FOOT_HALF)/(2*FOOT_HALF);  // sloped ground line at z=5
-  const legTop  = SEAT_RAIL_CY - W4/2;               // 12.0 — meets the center rail underside
-  add('leg-center','Center support leg','2x4','2×4 · '+(legTop-groundY).toFixed(1)+'″ (cut foot on site)',
-      [TH, legTop-groundY, W4], [0, (legTop+groundY)/2, CTR_Z]);
+  // The front-leg (A) line in the Z-Y plane: foot (FOOT_HALF, FRONT_FOOT_Y) → top (frontLegZ(LEG_TOP_Y), LEG_TOP_Y)
+  const Az0=FOOT_HALF, Ay0=FRONT_FOOT_Y, Az1=frontLegZ(LEG_TOP_Y), Ay1=LEG_TOP_Y;
+  const aplaneZ=(y)=> Az0 + (y-Ay0)*(Az1-Az0)/(Ay1-Ay0);
+  const lean = Math.atan2(Az1-Az0, Ay1-Ay0);          // ≈ −8.4° off vertical (matches AL/AR)
+  const G1_bottom = SEAT_TOP - TH;                     // 15.5 — underside of the seat slats (G1)
+  // AC — center front leg, coplanar with AL/AR, foot on the ground up to G1
+  const cl = strut(0, aplaneZ(Ay0),Ay0, aplaneZ(G1_bottom),G1_bottom, TH, W4);
+  add('leg-front-center','Center front leg (AC)','2x4','2×4 · '+cl.size[1].toFixed(1)+'″ (in A-plane; foot cut on site)',
+      cl.size, cl.pos, cl.rotX);
+  // EC — center seat rail: from the back face of AC at seat height, back to the centre post
+  const cFront = aplaneZ(SEAT_RAIL_CY) - (W4/2)/Math.cos(lean);  // butts the back face of AC
+  const cRear  = backrestZ(SEAT_RAIL_CY) + 1.0;        // butt just in front of the centre post
+  add('seatrail-center','Center seat rail (EC · front cut 8.4° to AC)','2x4','2×4 · '+(cFront-cRear).toFixed(1)+'″',
+      [TH, W4, cFront-cRear], [0, SEAT_RAIL_CY, (cFront+cRear)/2]);
 }
 
 // ---- Back slats (2x4, left-to-right, on the seat-side face of the backrest) ----
@@ -415,15 +421,22 @@ for(const [side,sx,rx] of [['left',-LEG_X,-RAIL_X],['right',LEG_X,RAIL_X]]){
     const t  = sLo + i*step;
     const cy = backrest.y0 + t*dirY + off*nY;
     const cz = backrest.z0 + t*dirZ + off*nZ;
-    add('back-slat-'+(i+1),'Backrest slat '+(i+1),'2x4','2×4 · '+BACK_SLAT_W.toFixed(0)+'″ (nests between arms)',
+    add('back-slat-'+(i+1),'Backrest slat '+(i+1),'2x4','2×4 · '+BACK_SLAT_W.toFixed(0)+'″ (= seat slats)',
         [BACK_SLAT_W, W4, TH], [0, cy, cz], -RCL);
   }
 }
 
 // ---- Two bottom cross beams (front + rear) joining the A-frames ----
 const BEAM_FIT = 2*(RAIL_X - TH/2);   // fit between the tails' inner faces (no crossing)
-add('beam-front','Bottom cross beam – front','2x4','2×4 · '+BEAM_FIT.toFixed(0)+'″',
-    [BEAM_FIT, W4, TH], [0, BOT_RAIL_CY, frontLegZ(BOT_RAIL_CY)]);
+// Front beam SPLIT into two halves that butt the center leg AC (so AC can run to the ground)
+{
+  const beamFZ = frontLegZ(BOT_RAIL_CY);
+  const beamHalf = BEAM_FIT/2 - TH/2;   // from the bottom-rail inner face in to AC's face (±0.75)
+  for(const [sd,sgn] of [['left',-1],['right',1]]){
+    add('beam-front-'+sd,'Bottom cross beam – front ('+sd+')','2x4','2×4 · '+beamHalf.toFixed(0)+'″ (butts center leg)',
+        [beamHalf, W4, TH], [sgn*(TH/2 + beamHalf/2), BOT_RAIL_CY, beamFZ]);
+  }
+}
 // Rear beam: pulled IN toward the seat so its 3.5" face laminates flat against the posts'
 // 3.5" faces; CANTED to the recline; butted on its front by the two bottom rails.
 const beamCZ = backrestZ(BEAM_Y) + TH*Math.cos(RCL);   // beam centre Z (in front of the post line)
