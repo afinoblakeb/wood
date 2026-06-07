@@ -633,21 +633,21 @@ const screwMat = new THREE.MeshStandardMaterial({ color:0x5a5e66, roughness:0.45
 function addHW(m){ m.castShadow=true; m.userData={isBolt:true}; boltsGroup.add(m); m.userData.home=m.position.clone(); }
 
 // 4 CARRIAGE BOLTS — 2 per side, clamp each outer backrest post to its back leg
-// where they cross below the seat.  Domed carriage head + washer OUTBOARD, washer +
-// butterfly (wing) nut INBOARD.  (8 washers, 4 wing nuts total — matches the hardware
-// bought.)  A future hinge would replace these at the same seat-back corner.
-const shankGeo = new THREE.CylinderGeometry(0.20,0.20, 4.2, 14);   // 5/16" × ~4" bolt
+// where they cross below the seat.  Domed carriage head + fender washer OUTBOARD, fender
+// washer + NYLOC nut INBOARD.  Bolts spread 6″ vertically (was 4″) for leverage against the
+// recline moment; ~7″ bolt to pass the post+rail+leg (6.5″) stack.
+const shankGeo = new THREE.CylinderGeometry(0.20,0.20, 7.0, 14);   // 3/8" × ~7" bolt (3-layer stack)
 const headGeo  = new THREE.CylinderGeometry(0.55,0.55, 0.30, 18);  // domed carriage head
-const washGeo  = new THREE.CylinderGeometry(0.45,0.45, 0.10, 18);  // flat washer
-const wingGeo  = new THREE.BoxGeometry(1.4, 0.7, 0.35);            // butterfly/wing nut (simplified)
+const washGeo  = new THREE.CylinderGeometry(0.62,0.62, 0.10, 18);  // fender washer (large OD for soft pine)
+const nutGeo   = new THREE.CylinderGeometry(0.42,0.42, 0.40, 6);   // nyloc / hex nut
 for(const sx of [-1,1]){
-  for(const by of [12, 16]){                       // two bolts up the post↔leg overlap
+  for(const by of [11, 17]){                       // two bolts 6″ apart up the post↔leg lap
     const cz = (backLegZ(by) + backrestZ(by))/2;   // through the lapped joint
     const shank = new THREE.Mesh(shankGeo, steelMat); shank.rotation.z=Math.PI/2; shank.position.set(sx*24.25, by, cz); addHW(shank);
     const head  = new THREE.Mesh(headGeo,  steelMat); head.rotation.z =Math.PI/2; head.position.set(sx*26.4, by, cz); addHW(head);  // outboard
-    const wo    = new THREE.Mesh(washGeo,  steelMat); wo.rotation.z   =Math.PI/2; wo.position.set(sx*26.1, by, cz); addHW(wo);       // washer under head
-    const wi    = new THREE.Mesh(washGeo,  steelMat); wi.rotation.z   =Math.PI/2; wi.position.set(sx*22.4, by, cz); addHW(wi);       // washer under nut
-    const wing  = new THREE.Mesh(wingGeo,  steelMat); wing.position.set(sx*22.0, by, cz); addHW(wing);                                // wing nut, inboard
+    const wo    = new THREE.Mesh(washGeo,  steelMat); wo.rotation.z   =Math.PI/2; wo.position.set(sx*26.1, by, cz); addHW(wo);       // fender washer under head
+    const wi    = new THREE.Mesh(washGeo,  steelMat); wi.rotation.z   =Math.PI/2; wi.position.set(sx*22.4, by, cz); addHW(wi);       // fender washer under nut
+    const nut   = new THREE.Mesh(nutGeo,   steelMat); nut.rotation.z  =Math.PI/2; nut.position.set(sx*22.1, by, cz); addHW(nut);     // nyloc nut, inboard
   }
 }
 
