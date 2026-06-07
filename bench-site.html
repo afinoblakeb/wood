@@ -388,6 +388,21 @@ for(const [side,sx,rx] of [['left',-LEG_X,-RAIL_X],['right',LEG_X,RAIL_X]]){
   }
 }
 
+// ---- Center support (sag fix): center seat rail at x=0 carried by a center leg ----
+// Halves the ~54″ flat-slat span. Rear end butts the center backrest post; front end is
+// carried by a short center leg down to the sloped ground (foot scribed/cut to fit on site).
+{
+  const cF = frontLegZ(SEAT_RAIL_CY);                 // 9.08 — front (matches side rails)
+  const cR = backrestZ(SEAT_RAIL_CY) + 1.0;           // butt just in front of the center post
+  add('seatrail-center','Center seat rail (sag support)','2x4','2×4 · '+(cF-cR).toFixed(1)+'″',
+      [TH, W4, cF-cR], [0, SEAT_RAIL_CY, (cF+cR)/2]);
+  const CTR_Z = 5;                                    // forward of both cross beams & the posts
+  const groundY = FRONT_FOOT_Y*(CTR_Z + FOOT_HALF)/(2*FOOT_HALF);  // sloped ground line at z=5
+  const legTop  = SEAT_RAIL_CY - W4/2;               // 12.0 — meets the center rail underside
+  add('leg-center','Center support leg','2x4','2×4 · '+(legTop-groundY).toFixed(1)+'″ (cut foot on site)',
+      [TH, legTop-groundY, W4], [0, (legTop+groundY)/2, CTR_Z]);
+}
+
 // ---- Back slats (2x4, left-to-right, on the seat-side face of the backrest) ----
 {
   const dirY = (backrest.y1-backrest.y0)/backrest.len;
