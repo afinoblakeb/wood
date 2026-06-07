@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Build-Day Guide — Sloped Tree Bench</title>
+  <meta name="description" content="Field build-day runbook for the sloped, tree-anchored A-frame bench: tonight checklist, cut list with protractor settings, fastener schedule for the exact kit, temp-framing / scribe-to-fit workflow, jigs, build sequence, and finishing." />
+  <link rel="stylesheet" href="../assets/css/style.css" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Ctext y='14' font-size='14'%3E%F0%9F%AA%9A%3C/text%3E%3C/svg%3E" />
+  <style>
+    /* Build-day specific touches — printable, phone-first */
+    .danger { border-left: 5px solid #b3402f; background: #fbeae6; }
+    .danger strong { color: #8c2c1f; }
+    .ok { border-left: 5px solid var(--accent); background: #eef6ef; }
+    .pill { display:inline-block; padding:1px 8px; border-radius:999px; font-size:.78em;
+            font-weight:700; vertical-align:middle; }
+    .pill.sq { background:#e7eef7; color:#234; }
+    .pill.mi { background:#f7ecd9; color:#7a4; color:#7a4a12; }
+    ul.check { list-style:none; padding-left:0; }
+    ul.check li { padding:6px 0 6px 30px; position:relative; border-bottom:1px dashed var(--line); }
+    ul.check li::before { content:"☐"; position:absolute; left:4px; top:5px; font-size:1.1em; color:var(--wood); }
+    table td, table th { vertical-align: top; }
+    .small { font-size:.88em; color:var(--ink-soft); }
+    h2 { margin-top:1.6em; border-top:2px solid var(--line); padding-top:.6em; }
+    @media print { .site-header, .toc, .site-footer, .crumb { display:none; } a { color:inherit; text-decoration:none; } }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <div class="wrap">
+      <a class="brand" href="../plans.html"><span class="logo">🪚</span> Woodshop Plans</a>
+      <nav class="nav">
+        <a href="../plans.html">Projects</a>
+        <a href="../bench-site.html">3D Model (site)</a>
+        <a href="https://github.com/afinoblakeb/wood">GitHub</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="wrap plan">
+    <p class="crumb"><a href="../plans.html">← All projects</a> &nbsp;·&nbsp; <a href="../bench-site.html">🪑 Interactive 3D model (sloped site install)</a></p>
+    <span class="badge">Build-Day Field Guide</span>
+    <h1>Sloped Tree Bench — Build-Day Guide</h1>
+    <p class="lead">Everything for <strong>build day</strong>, in order. A two-seat symmetric
+    <strong>A-frame</strong> bench installed on a slope and lag-bolted to a <strong>~54″ tree</strong>:
+    the seat reclines back <strong>5°</strong> so you settle into the backrest, the front legs run long to
+    reach the downhill ground, and the seat rails extend into <strong>“tails”</strong> that pinch the trunk.
+    Built from <strong>10 × 10-ft 2×4</strong> + <strong>1 × 8-ft 2×6</strong> pine. This guide is the
+    authoritative build doc — it supersedes the older written plan.</p>
+
+    <div class="specs">
+      <div class="spec"><div class="num">60″</div><div class="label">Width</div></div>
+      <div class="spec"><div class="num">~30″</div><div class="label">Depth</div></div>
+      <div class="spec"><div class="num">5°</div><div class="label">Seat recline</div></div>
+      <div class="spec"><div class="num">20°</div><div class="label">Back recline</div></div>
+      <div class="spec"><div class="num">~54″</div><div class="label">Tree pinch</div></div>
+      <div class="spec"><div class="num">27</div><div class="label">Boards (25× 2×4, 2× 2×6)</div></div>
+    </div>
+
+    <div class="callout danger">
+      <strong>⚠ Verify these TONIGHT — they can stop build day cold.</strong>
+      <ol style="margin:.5em 0 0">
+        <li><strong>Lag screws for the tree are not in your kit.</strong> The whole rear of the bench hangs
+        off lagging the tails to the trunk. Have <strong>≥4 exterior ⅜″ × 4–5″ lag screws + washers</strong>
+        (2 per tail). No fallback exists in the bought hardware.</li>
+        <li><strong>Carriage-bolt length.</strong> They clamp the backrest <em>post → seat-rail → back-leg</em>
+        stack = <strong>6.5″ of wood</strong>, so a through-all-three bolt wants to be <strong>~7″</strong>.
+        If yours are 4–5″, fall back to bolting <em>post → rail only</em> (5″ of wood, ~5½″ bolt) — the rail
+        is itself screwed to the leg and lagged to the tree, so it’s still solid. <strong>Measure your bolts.</strong></li>
+        <li><strong>Fastener corrosion.</strong> Pine + moisture eat plain/zinc steel (black streaks, failure
+        in 1–2 seasons). Confirm screws, carriage bolts and lags are <strong>coated / galvanized / stainless</strong>.</li>
+        <li><strong>Wing nuts back off outdoors.</strong> Since this build doesn’t fold, swap the 4 butterfly
+        nuts for <strong>nyloc (nylon-insert) nuts</strong> if you can.</li>
+        <li><strong>Screw count.</strong> With the new center support you need <strong>~60–65 pocket screws</strong>,
+        not 50 — grab a second small box of <strong>1½″ and 2½″ square-drive</strong>.</li>
+      </ol>
+    </div>
+
+    <nav class="toc">
+      <strong>On this page</strong>
+      <ul>
+        <li><a href="#kit">Your kit &amp; tools</a></li>
+        <li><a href="#cutlist">Cut list + protractor settings</a></li>
+        <li><a href="#cutting">Cutting with your tools</a></li>
+        <li><a href="#fasteners">Fastener schedule (by joint)</a></li>
+        <li><a href="#workflow">The big idea: temp-frame → scribe → final-cut</a></li>
+        <li><a href="#jigs">Jigs to make first</a></li>
+        <li><a href="#sequence">Build-day sequence</a></li>
+        <li><a href="#measure">Measure-twice checklist</a></li>
+        <li><a href="#finish">Finishing</a></li>
+        <li><a href="#design">Design notes to confirm at dry-fit</a></li>
+      </ul>
+    </nav>
+
+    <h2 id="kit">Your kit &amp; tools</h2>
+    <p><strong>Lumber:</strong> 10 × 10-ft 2×4 pine, 1 × 8-ft 2×6 pine (armrests). All cuts fit a 10-ft board;
+    it packs into exactly 10 boards at ~10% waste, so it’s <em>tight</em> — buy <strong>one spare 10-ft 2×4</strong>
+    as knot/miscut insurance, and <strong>cut the longest pieces first from the cleanest stock</strong>.</p>
+    <p><strong>Fasteners:</strong> pocket screws (1½″ + 2½″ square-drive — get more, see above), pocket-hole jig,
+    pine plugs, 4 carriage bolts + 8 washers + 4 nuts (nyloc preferred), exterior lag screws for the tree, glue.</p>
+    <p><strong>Tools you have:</strong> power drill · 6″ circular saw · Japanese pull saw · carpenter square ·
+    carpenter protractor + straightedge · multi-angle level · 4 ratcheting squeeze clamps · square (sheet)
+    sander + 100/150/220 grit · wood putty · transparent tinted stain · waterproofing spray.</p>
+
+    <h2 id="cutlist">Cut list + protractor settings</h2>
+    <p>Lengths are measured straight off the 3D model. <span class="pill mi">MITER</span> = angled cut
+    <em>across the wide 3½″ face</em> (saw stays vertical, line drawn at an angle). <span class="pill sq">SQUARE</span>
+    = a normal 90° cut. <strong>Only the four legs carry a saw angle</strong> — everything else is square. The 5°
+    seat tilt and 20° recline are achieved by <em>tilting square-cut boards at assembly</em>, not by beveling.</p>
+    <div class="table-scroll">
+    <table>
+      <thead><tr><th>Part</th><th>Qty</th><th>Lumber</th><th>Length</th><th>End cuts</th><th>Protractor</th></tr></thead>
+      <tbody>
+        <tr><td>Front legs</td><td>2</td><td>2×4</td><td>34.2″</td><td><span class="pill mi">MITER</span> both ends, parallel</td><td>Set <strong>8.4°</strong> off square; both feet/tops the same.</td></tr>
+        <tr><td>Back legs</td><td>2</td><td>2×4</td><td>24.0″</td><td><span class="pill mi">MITER</span> both ends, parallel</td><td>Set <strong>12.0°</strong> off square; both ends the same.</td></tr>
+        <tr><td>Backrest posts</td><td>3</td><td>2×4</td><td>32.1″</td><td><span class="pill sq">SQUARE</span></td><td>Recline comes from the canted rear beam — don’t bevel the post.</td></tr>
+        <tr><td>Armrests</td><td>2</td><td><strong>2×6</strong></td><td>27.6″</td><td><span class="pill sq">SQUARE</span></td><td>Round/ease the front corners. <em>Not 2×4.</em></td></tr>
+        <tr><td>Seat rails / tree tails</td><td>2</td><td>2×4</td><td>58.3″</td><td><span class="pill sq">SQUARE</span> (tree end cut on site)</td><td>On edge. Long tail runs back to the trunk.</td></tr>
+        <tr><td>Center seat rail <span class="small">(sag fix)</span></td><td>1</td><td>2×4</td><td>17.0″</td><td><span class="pill sq">SQUARE</span></td><td>On edge, at x=0; rear butts the center post.</td></tr>
+        <tr><td>Center support leg <span class="small">(sag fix)</span></td><td>1</td><td>2×4</td><td>19.3″</td><td>Square top, <strong>foot scribed on site</strong></td><td>Holds up the center rail; leave long, trim foot to ground.</td></tr>
+        <tr><td>Bottom rails</td><td>2</td><td>2×4</td><td>20.8″</td><td><span class="pill sq">SQUARE</span></td><td>On edge; laps front &amp; back legs.</td></tr>
+        <tr><td>Seat slats</td><td>5</td><td>2×4</td><td>57.0″</td><td><span class="pill sq">SQUARE</span></td><td>Flat, between the legs, on the rails.</td></tr>
+        <tr><td>Back slats</td><td>5</td><td>2×4</td><td>52.0″</td><td><span class="pill sq">SQUARE</span></td><td>Flat; nest between the armrests.</td></tr>
+        <tr><td>Front cross beam</td><td>1</td><td>2×4</td><td>54.0″</td><td><span class="pill sq">SQUARE</span></td><td>On edge, between front legs.</td></tr>
+        <tr><td>Rear cross beam</td><td>1</td><td>2×4</td><td>54.0″</td><td><span class="pill sq">SQUARE</span></td><td>On edge; <em>canted 20°</em> in place (tilt, don’t bevel).</td></tr>
+      </tbody>
+    </table>
+    </div>
+    <p class="small"><strong>Foot &amp; tail ends:</strong> the leg <em>feet</em> get a final compound cut on site
+    (the 8.4°/12° face miter + the slope), and both <em>tail</em> ends are cut to the real trunk on site —
+    so cut leg and tail <strong>blanks long</strong> (see workflow). The 8.4°/12° face miters at the tops can be
+    cut now.</p>
+
+    <h2 id="cutting">Cutting with your tools</h2>
+    <ul>
+      <li><strong>6″ circular saw — depth is fine.</strong> A 2×4 is only 1½″ thick, so every face cut and the
+      8.4°/12° miters (which travel across the 3½″ width at 1½″ depth) are well within the saw. Set the blade
+      ~⅛″ deeper than the board, cut on the <em>waste side</em> of the line.</li>
+      <li><strong>Japanese pull saw = your finish &amp; site saw.</strong> Use it for the compound <em>foot</em>
+      cuts and the <em>tail-to-trunk</em> cuts on site (where the circular saw can’t follow a scribed/curved
+      line), for trimming the pine plugs flush, and to clean up any miter the circular saw leaves rough.</li>
+      <li><strong>Mark with the carpenter square</strong> for square cuts; set the <strong>protractor + straightedge</strong>
+      to 8.4° (front legs) or 12.0° (back legs), scribe the line across the 3½″ face, and follow it freehand or
+      with a clamped straightedge as a saw fence.</li>
+      <li><strong>Gang-cut</strong> the matched pairs (the 2 front legs together, 2 back legs together, the 5 seat
+      slats to one length) so mirror parts are identical.</li>
+      <li><strong>Sand ladder:</strong> 100 (knock down saw marks &amp; flush plugs) → 150 → 220 before stain.
+      <strong>Ease every edge</strong> ~⅛″ (a light 100-grit pass), and round the front armrest corners — square
+      pine edges chip and feel sharp.</li>
+    </ul>
+
+    <h2 id="fasteners">Fastener schedule (by joint)</h2>
+    <p>No deck screws in the kit, so every screwed joint is a <strong>pocket screw</strong> (or a bolt). Drill
+    pocket holes on the <strong>hidden face</strong> so the plug never shows. <strong>Glue every joint</strong> —
+    on the slats the glue does most of the work and the single screw just clamps it.</p>
+    <div class="table-scroll">
+    <table>
+      <thead><tr><th>Joint</th><th>Fastener</th><th>Qty</th><th>Pocket-hole / notes</th></tr></thead>
+      <tbody>
+        <tr><td>Seat rail → front &amp; back leg</td><td>2½″ pocket screw + glue</td><td>2 each</td><td>Drill the rail end; plugs face inward/down (hidden under the seat).</td></tr>
+        <tr><td>Bottom rail → front &amp; back leg</td><td>2½″ pocket screw + glue</td><td>2 each</td><td>Drill the rail end. Laps both legs — the A-frame’s lower brace.</td></tr>
+        <tr><td>Front / rear beam → legs</td><td>2½″ pocket screw + glue</td><td>2 each end</td><td>Beam butts the leg face — drill <em>beam</em> into leg (not into end grain). Predrill; don’t overtorque.</td></tr>
+        <tr><td>Backrest posts → rear beam</td><td>2½″ pocket screw + glue</td><td>2 each post</td><td>Full 3½″×3½″ glue face — strong. Drive from behind the beam.</td></tr>
+        <tr><td><strong>Backrest post → seat-rail → back leg</strong></td><td><strong>Carriage bolt</strong> + 2 washers + nyloc</td><td>2 per side (<strong>4 total</strong>)</td><td>⅜″ <em>clearance</em> hole through all three (≈6.5″ → ~7″ bolt; fallback post→rail with ~5½″ bolt). Two bolts ~6″ apart resist the recline lever.</td></tr>
+        <tr><td>Center seat rail → center post (butt)</td><td>2½″ pocket screw + glue</td><td>2</td><td>Rear support for the center rail.</td></tr>
+        <tr><td>Center support leg → center rail</td><td>2½″ pocket screw + glue</td><td>2</td><td>Front support; trim foot to ground first.</td></tr>
+        <tr><td>Armrest → leg tops + backrest post</td><td>2½″ pocket screw + glue</td><td>2 + 1 per side</td><td>Drill the armrest underside; plug hidden beneath.</td></tr>
+        <tr><td>Seat slats → 3 rails</td><td>1½″ pocket screw + glue</td><td>1 per bearing (15)</td><td>Drill the slat <em>underside</em>; screw up into each rail. ~⅜″ gaps.</td></tr>
+        <tr><td>Back slats → posts</td><td>1½″ pocket screw + glue</td><td>1 each (≈8)</td><td>Drill the <em>back</em> face; drive forward. Fasten <strong>before</strong> the rear beam closes access.</td></tr>
+        <tr><td><strong>Tails → tree</strong></td><td><strong>Lag screw</strong> ⅜″×4–5″ + washer</td><td>2 per tail (<strong>4</strong>)</td><td>Pilot the tail (clearance) + pilot into solid trunk wood. Stagger vertically. Use a standoff pad on bark; re-snug yearly.</td></tr>
+      </tbody>
+    </table>
+    </div>
+    <p class="small"><strong>Predrill everything in pine</strong> — it splits at bolt/lag holes. Carriage bolts
+    seat on their square shoulder, so use a full-diameter ⅜″ clearance hole (no thread bite in the wood). Lags
+    get a pilot ~70% of the shank.</p>
+    <div class="callout">
+      <strong>Clamp strategy (only 4 clamps).</strong> Bolts and pocket screws <em>are</em> clamps — let them
+      do the work and save the squeeze clamps for the two glued stages that have nothing else holding them:
+      the <strong>two A-frame ends</strong> (glue + screw flat on the ground, one end at a time) and the
+      <strong>bolt laps</strong> (clamp the post/rail/leg sandwich tight, drill, bolt — the bolts then free the clamps).
+    </div>
+
+    <h2 id="workflow">The big idea: temp-frame → scribe → final-cut</h2>
+    <p>The ground is lumpy and the trunk isn’t a clean cylinder, so <strong>do not commit ground/tree cuts in
+    the shop.</strong> Build what bench <em>geometry</em> defines (precise, square) and leave what the
+    <em>site</em> defines long. Then prop the bench at its true attitude on site, scribe the real surfaces,
+    and cut once. Three buckets:</p>
+    <ul>
+      <li><strong>Cut final in the shop:</strong> backrest module (3 posts + 5 back slats + canted rear beam,
+      pre-drilled for the bolts), armrests, seat slats, both beams, all 8.4°/12° leg-<em>top</em> miters.</li>
+      <li><strong>Shop-built but left LONG at the ground/tree end:</strong> the 4 leg <em>feet</em> (cut tops,
+      leave feet square + 4–6″ long; front-leg blanks ~10″ longer than back), the seat-rail <em>tails</em>
+      (front section to spec, trunk end left 8–12″ long), the center support leg foot.</li>
+      <li><strong>Cut entirely on site:</strong> final foot length/angle on all 5 legs, both tail ends to the
+      bark, and the bottom-rail lengths once the real leg spread is set.</li>
+    </ul>
+    <p><strong>Set the attitude with props, not the ground.</strong> Stand the two A-frames, prop the feet with
+    offcuts/stakes until the <strong>seat reads 5° rear-down</strong> on the multi-angle level <em>and</em>
+    <strong>level side-to-side</strong>, at sitting height. Stake the props so nothing moves. Now scribe each
+    foot to the dirt (run a pencil along a flat offcut riding the ground) and scribe both tails to the trunk
+    (trace the bark curve, or flat-cut + a small saddle pad). Measure the real trunk (tape ÷ π) — don’t trust 54″.</p>
+
+    <h2 id="jigs">Jigs to make first (from offcuts)</h2>
+    <ul>
+      <li><strong>5° tilt gauge</strong> — set the protractor to 5°, cut a triangular offcut; lay it on the seat
+      rail and prop until <em>its</em> top reads level. Your reference for the whole install.</li>
+      <li><strong>Props / temporary legs</strong> — 4–5 stout offcuts to hold each foot at ride height while you
+      scribe; point/stake the downhill ones.</li>
+      <li><strong>Scribing block</strong> — a flat offcut of known thickness; pencil along its top transfers the
+      ground/bark profile onto the leg/tail.</li>
+      <li><strong>⅜″ slat spacers</strong> — two offcuts ripped to ⅜″ for fast, even slat gaps.</li>
+      <li><strong>Story pole</strong> — one straight offcut marked with the key heights (foot, bottom-rail ~6″,
+      seat ~17″, arm ~25″, back top ~36½″); faster and less error-prone than a tape on a slope.</li>
+      <li><strong>Trunk saddle pads + stakes</strong> — small offcuts to shim flat-cut tails to a non-round
+      trunk, and pointed stakes to brace props and stop the bench sliding downhill.</li>
+    </ul>
+
+    <h2 id="sequence">Build-day sequence</h2>
+    <ol class="steps">
+      <li><strong>Lay out &amp; probe.</strong> Stage all parts on a tarp. Probe the 4 (now 5) foot spots for
+      roots/rocks — find surprises before cutting.</li>
+      <li><strong>Build the two A-frames</strong> (front leg + back leg + seat rail + bottom rail), glue +
+      2½″ pocket screws, feet left long. Check square corner-to-corner. <em>Clamps 1–4, one end at a time.</em></li>
+      <li><strong>Build the backrest module</strong> (posts + back slats + canted rear beam), pre-drill the
+      ⅜″ bolt holes. Fasten back slats now — access closes once the beam is on.</li>
+      <li><strong>Establish datum:</strong> stand both A-frames, prop to a true <strong>5° rear-down</strong>,
+      level side-to-side, at ride height. Stake the props.</li>
+      <li><strong>Tack the geometry:</strong> 2 clamps hold the front beam at 60″ spread, 2 hold the backrest
+      module roughly in place. Re-true the 5° with the weight on.</li>
+      <li><strong>Scribe</strong> all feet to the dirt and both tails to the trunk; mark bottom-rail lengths.</li>
+      <li><strong>MEASURE TWICE</strong> (checklist below) — then cut feet, tails, and bottom rails with the
+      pull saw on the scribed lines.</li>
+      <li><strong>Fasten the frame:</strong> glue + pocket-screw the front beam and (canted) rear beam, drop the
+      center post. <strong>Bolt the backrest</strong> to the back legs — clamp the post/rail/leg sandwich, drill
+      ⅜″, set both carriage bolts per side.</li>
+      <li><strong>Center support:</strong> trim the center leg foot to the ground, set the center rail (butt to
+      center post + leg), pocket-screw + glue.</li>
+      <li><strong>Seat slats</strong> on the 3 rails (⅜″ spacers, 1 screw + glue per bearing), then touch up the
+      back slats.</li>
+      <li><strong>Armrests</strong> on the level leg tops, into leg + backrest post; counterbore, screw, glue, plug.</li>
+      <li><strong>Lag to the tree:</strong> pilot tail + trunk, drive 2 lags per tail into solid wood with a
+      standoff pad. Snug — don’t crush the bark.</li>
+      <li><strong>Pull the props,</strong> gently sit-test, re-snug everything, then finish.</li>
+    </ol>
+
+    <h2 id="measure">Measure-twice checklist (before the irreversible cuts)</h2>
+    <ul class="check">
+      <li>Seat reads <strong>5° rear-down AND level side-to-side</strong> with the loose assembly’s weight on the props.</li>
+      <li>All feet scribed; front spread still 60″; tail ends parallel.</li>
+      <li>Trunk actually measured; both tails reach it with margin onto <em>sound</em> wood (not soft/rotten bark).</li>
+      <li><strong>Front legs are the LONG pair</strong> — every leg marked FRONT/BACK and L/R (don’t cut a long leg to a short line).</li>
+      <li>Cutting on the <strong>waste side</strong> of every line.</li>
+      <li>Lag screws, ~7″ bolts, and exterior-rated screws confirmed on hand.</li>
+    </ul>
+
+    <h2 id="finish">Finishing</h2>
+    <ul>
+      <li><strong>Sand</strong> 100 → 150 → 220; ease all edges; flush-trim and sand the plugs <em>before</em>
+      staining so they take color evenly.</li>
+      <li><strong>Order: stain first, waterproof second.</strong> The transparent tinted stain penetrates bare
+      wood; the waterproofing spray is the topcoat over it (2 coats). Never waterproof under stain.</li>
+      <li><strong>End grain is the enemy outdoors.</strong> Double-seal every fresh site cut — feet, tail ends,
+      rail ends — they wick water fastest. Seal feet even though they’re hidden.</li>
+      <li><strong>Pre-finish in the shop</strong> what you can (slats, backrest, armrest, leg faces), masking the
+      scribe/glue/lag zones; finish only the fresh cuts &amp; touch-ups in the field.</li>
+      <li>Keep feet off standing water (a stone/paver/sealed pad in low spots). Glue needs a dry day above ~50°F —
+      if rain threatens, bolt &amp; lag it together today and finish in the next dry window.</li>
+    </ul>
+
+    <h2 id="design">Design notes to confirm at dry-fit</h2>
+    <div class="callout">
+      You chose to <strong>tune seat height &amp; recline on site</strong>. The model lands the seat fairly high
+      (~22–26″ above the downhill ground) with a relaxed ~120° seat-to-back angle — a reclined tree-perch. The
+      propped dry-fit (step 4) is your moment to check it: sit on the propped frame before cutting the feet. If
+      it feels too high or too far back, <strong>trim the front legs shorter</strong> (lowers and slightly sits-up
+      the seat) until it’s right — that’s exactly why the feet are left long. A standard bench is ~17–18″ seat /
+      ~105°; the reclined perch is taller / ~120°. Your call, made with the bench in front of you.
+    </div>
+
+    <p class="small" style="margin-top:2em"><a href="../bench-site.html">Open the interactive 3D model</a> to
+    spin any part, explode the assembly, or click a board to read its name and dimensions. All measurements use
+    actual lumber sizes (a 2×4 is 1½″ × 3½″).</p>
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap">
+      <p>🪚 Woodshop Plans — measure twice, cut once. Work safely.</p>
+    </div>
+  </footer>
+</body>
+</html>

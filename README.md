@@ -20,7 +20,8 @@ https://afinoblakeb.github.io/wood/
 | [Interactive 3D bench model](index.html) | A real-time Three.js model of the bench with assembled / exploded / individual-part views. Every board is a separately addressable mesh built from actual lumber sizes. |
 | [3D model — 2×6 / 1×6 variant](bench-variant.html) | A copy of the model exploring wider lumber (2×6 armrests & seat slats, 1×6 back slats) with routed/eased edges. The original all‑2×4 design is unchanged. |
 | [3D model — sloped + tree‑anchored site install](bench-site.html) | A copy for the real site: whole bench reclined 5° on a 4″ slope, front legs lengthened, and the bottom rails extended into "tails" that lag onto a tree behind the bench. |
-| [Two-Seat A-Frame Bench — plan](projects/2x4-garden-bench.html) | The written build plan, synced to the model: cut list with angle cuts, fastener schedule, supply list, and step-by-step assembly. |
+| [Build-Day Guide — sloped tree bench](projects/build-day.html) | The authoritative build-day runbook for the on-site install: tonight checklist, cut list with protractor settings, fastener schedule for the exact kit, temp-framing / scribe-to-fit workflow, jigs, sequence, and finishing. |
+| [Two-Seat A-Frame Bench — plan](projects/2x4-garden-bench.html) | The original flat-ground written plan. Superseded by the Build-Day Guide for the sloped/tree install. |
 | [All plans (gallery)](plans.html) | Project gallery / landing page. |
 
 ## Structure
