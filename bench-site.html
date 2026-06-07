@@ -383,7 +383,7 @@ for(const [side,sx,rx] of [['left',-LEG_X,-RAIL_X],['right',LEG_X,RAIL_X]]){
   const frontC = 7.5, rearC = -7.5;
   const step = (frontC - rearC)/(SEAT_SLAT_COUNT-1);
   for(let i=0;i<SEAT_SLAT_COUNT;i++){
-    add('seat-slat-'+(i+1),'Seat slat '+(i+1),'2x4','2×4 · 45″',
+    add('seat-slat-'+(i+1),'Seat slat '+(i+1),'2x4','2×4 · '+SLAT_W.toFixed(0)+'″',
         [SLAT_W, TH, W4], [0, SEAT_TOP - TH/2, frontC - i*step]);
   }
 }
@@ -407,13 +407,13 @@ for(const [side,sx,rx] of [['left',-LEG_X,-RAIL_X],['right',LEG_X,RAIL_X]]){
 
 // ---- Two bottom cross beams (front + rear) joining the A-frames ----
 const BEAM_FIT = 2*(RAIL_X - TH/2);   // fit between the tails' inner faces (no crossing)
-add('beam-front','Bottom cross beam – front','2x4','2×4 · 42″',
+add('beam-front','Bottom cross beam – front','2x4','2×4 · '+BEAM_FIT.toFixed(0)+'″',
     [BEAM_FIT, W4, TH], [0, BOT_RAIL_CY, frontLegZ(BOT_RAIL_CY)]);
 // Rear beam: pulled IN toward the seat so its 3.5" face laminates flat against the posts'
 // 3.5" faces; CANTED to the recline; butted on its front by the two bottom rails.
 const beamCZ = backrestZ(BEAM_Y) + TH*Math.cos(RCL);   // beam centre Z (in front of the post line)
 const beamCY = BEAM_Y + TH*Math.sin(RCL);              // beam centre Y
-add('beam-rear','Bottom cross beam – rear (canted; posts'+"'"+' faces mount flush to its 3.5″ face)','2x4','2×4 · 42″',
+add('beam-rear','Bottom cross beam – rear (canted; posts'+"'"+' faces mount flush to its 3.5″ face)','2x4','2×4 · '+BEAM_FIT.toFixed(0)+'″',
     [BEAM_FIT, W4, TH], [0, beamCY, beamCZ], -RCL);
 
 /* =====================================================================
