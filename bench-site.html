@@ -373,8 +373,8 @@ for(const [side,sx,rx] of [['left',-LEG_X,-RAIL_X],['right',LEG_X,RAIL_X]]){
   add('seatrail-'+side,'Seat rail / tree tail ('+side+')','2x4','2×4 · '+(srF-srB).toFixed(1)+'″ (tree tail)',
       [TH, W4, srF-srB], [rx, SEAT_RAIL_CY, (srF+srB)/2]);
   // Bottom rail — runs front leg → BACK LEG (laps both), the A-frame's lower crossbar (sturdy)
-  const brF = frontLegZ(BOT_RAIL_CY), brB = backLegZ(BOT_RAIL_CY);
-  add('bottomrail-'+side,'Bottom rail ('+side+')','2x4','2×4 · '+(brF-brB).toFixed(1)+'″ (laps front & back legs)',
+  const brF = frontLegZ(BOT_RAIL_CY) - TH/2, brB = backLegZ(BOT_RAIL_CY);  // front end butts the back face of the wide beam J
+  add('bottomrail-'+side,'Bottom rail ('+side+')','2x4','2×4 · '+(brF-brB).toFixed(1)+'″ (laps legs; butts beam J)',
       [TH, W4, brF-brB], [rx, BOT_RAIL_CY, (brF+brB)/2]);
 }
 
@@ -439,9 +439,11 @@ for(const [side,sx,rx] of [['left',-LEG_X,-RAIL_X],['right',LEG_X,RAIL_X]]){
 
 // ---- Two bottom cross beams (front + rear) joining the A-frames ----
 const BEAM_FIT = 2*(RAIL_X - TH/2);   // fit between the tails' inner faces (no crossing)
-// Single continuous front beam J — passes in front of AC (which sits 1.5″ behind it)
-add('beam-front','Bottom cross beam – front','2x4','2×4 · '+BEAM_FIT.toFixed(0)+'″',
-    [BEAM_FIT, W4, TH], [0, BOT_RAIL_CY, frontLegZ(BOT_RAIL_CY)]);
+// Single continuous front beam J — full width between the leg inner faces (57″, = seat slats);
+// passes in front of AC (1.5″ behind it). Bottom rails butt its back face.
+const FRONT_BEAM_W = 2*INNER_X;   // 57 — butts the leg inner faces
+add('beam-front','Bottom cross beam – front','2x4','2×4 · '+FRONT_BEAM_W.toFixed(0)+'″',
+    [FRONT_BEAM_W, W4, TH], [0, BOT_RAIL_CY, frontLegZ(BOT_RAIL_CY)]);
 // Rear beam: pulled IN toward the seat so its 3.5" face laminates flat against the posts'
 // 3.5" faces; CANTED to the recline; butted on its front by the two bottom rails.
 const beamCZ = backrestZ(BEAM_Y) + TH*Math.cos(RCL);   // beam centre Z (in front of the post line)
