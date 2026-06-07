@@ -299,6 +299,7 @@ const RCL_N = { y: Math.sin(RCL), z: Math.cos(RCL) };  // recline (front-face) n
 const postFrontZ = (y) => backrestZ(y) + (TH/2)*Math.cos(RCL);
 const SLAT_W = 2*INNER_X;                              // seat slats tuck between the legs
 const BACK_SLAT_W = SLAT_W;                            // back slats SAME length as seat slats (G1 = H1)
+const SLAT_GAP = 0.375;                                // ⅜″ — one consistent gap for seat AND back slats
 
 /* =====================================================================
    PART DEFINITIONS
@@ -399,8 +400,8 @@ for(const [side,sx,rx] of [['left',-LEG_X,-RAIL_X],['right',LEG_X,RAIL_X]]){
 
 // ---- Seat slats (2x4 flat, left-to-right, on top of the seat rails) ----
 {
-  const frontC = 7.5, rearC = -7.5;
-  const step = (frontC - rearC)/(SEAT_SLAT_COUNT-1);
+  const step = W4 + SLAT_GAP, rearC = -7.5;   // ⅜″ gaps; REAR slat anchored clear of the backrest posts
+  const frontC = rearC + (SEAT_SLAT_COUNT-1)*step;   // field grows forward (front overhang is harmless)
   for(let i=0;i<SEAT_SLAT_COUNT;i++){
     add('seat-slat-'+(i+1),'Seat slat '+(i+1),'2x4','2×4 · '+SLAT_W.toFixed(0)+'″',
         [SLAT_W, TH, W4], [0, SEAT_TOP - TH/2, frontC - i*step]);
@@ -439,8 +440,8 @@ for(const [side,sx,rx] of [['left',-LEG_X,-RAIL_X],['right',LEG_X,RAIL_X]]){
   const dirZ = (backrest.z1-backrest.z0)/backrest.len;
   const nY = Math.sin(RCL), nZ = Math.cos(RCL), off = TH; // proud of the 3.5" front face (post 1.5" deep)
   // start the lowest slat ~2" above the seat (robust to post length), top slat flush with the post top
-  const sLo = (SEAT_TOP + 2 - backrest.y0 - off*nY)/dirY, sHi = backrest.len - W4/2;
-  const step = (sHi - sLo)/(BACK_SLAT_COUNT-1);
+  const sLo = (SEAT_TOP + 2 - backrest.y0 - off*nY)/dirY;   // lowest slat ~2″ above seat (lumbar)
+  const step = W4 + SLAT_GAP;                               // ⅜″ gaps, same as the seat
   for(let i=0;i<BACK_SLAT_COUNT;i++){
     const t  = sLo + i*step;
     const cy = backrest.y0 + t*dirY + off*nY;
