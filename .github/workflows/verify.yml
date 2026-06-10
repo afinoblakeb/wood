@@ -1,0 +1,25 @@
+name: Verify models
+
+# Runs on PRs and pushes that touch the models or tools, so a board collision
+# or syntax error is caught before it can be merged/deployed.
+on:
+  pull_request:
+    paths: ['**.html', 'tools/**']
+  push:
+    branches: [main]
+    paths: ['**.html', 'tools/**']
+  workflow_dispatch:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Verify (syntax + interference) + print cut list
+        run: |
+          node tools/verify.mjs
+          echo '--- cut list (bench-site) ---'
+          node tools/cutlist.mjs bench-site.html

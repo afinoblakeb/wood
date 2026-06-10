@@ -1,0 +1,14 @@
+{
+  "name": "woodshop-plans",
+  "version": "1.0.0",
+  "description": "Static woodworking project plans + interactive parametric 3D models.",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "verify": "node tools/verify.mjs",
+    "cutlist": "node tools/cutlist.mjs",
+    "pack": "node tools/pack.mjs",
+    "hardware": "node tools/hardware.mjs"
+  },
+  "license": "MIT"
+}
