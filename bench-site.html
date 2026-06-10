@@ -313,7 +313,7 @@ const RCL_N = { y: Math.sin(RCL), z: Math.cos(RCL) };  // recline (front-face) n
 // Z of the backrest post's seat-side (front) face at height y — rails butt to this
 const postFrontZ = (y) => backrestZ(y) + (TH/2)*Math.cos(RCL);
 const SLAT_W = 2*INNER_X;                              // seat slats tuck between the legs
-const BACK_SLAT_W = SLAT_W;                            // back slats SAME length as seat slats (G1 = H1)
+const BACK_SLAT_W = 2*(LEG_X - W6/2) - 1;              // nest BETWEEN the arms so the arms can tie into the backrest
 const SLAT_GAP = 0.375;                                // ⅜″ — one consistent gap for seat AND back slats
 
 /* =====================================================================
@@ -390,7 +390,7 @@ for(const [side,bx] of [['left',-BACKREST_X],['center',0],['right',BACKREST_X]])
 for(const [side,sx,rx] of [['left',-LEG_X,-RAIL_X],['right',LEG_X,RAIL_X]]){
   // Flat armrest: caps the A from the front leg, over the back leg, to the backrest
   const armFront = frontLegZ(ARM_CY) + W4/2 + 4.5;   // longer front overhang (reaches past seat)
-  const armBack  = backLegZ(LEG_TOP_Y) - W4/2;       // stop at the back leg so the full-width back slats clear
+  const armBack  = backrestZ(ARM_CY) - W4/2;         // reach back to TIE INTO the backrest post (a high brace)
   add('armrest-'+side,'Armrest ('+side+')','2x6','2×6 · '+(armFront-armBack).toFixed(1)+'″(flat)',
       [W6, TH, armFront-armBack], [sx, ARM_CY, (armFront+armBack)/2]);
   // Seat rail → TREE TAIL: seat slats land on the front; the rail runs back to pinch the trunk
@@ -461,7 +461,7 @@ for(const [side,sx,rx] of [['left',-LEG_X,-RAIL_X],['right',LEG_X,RAIL_X]]){
     const t  = sLo + i*step;
     const cy = backrest.y0 + t*dirY + off*nY;
     const cz = backrest.z0 + t*dirZ + off*nZ;
-    add('back-slat-'+(i+1),'Backrest slat '+(i+1),'2x4','2×4 · '+BACK_SLAT_W.toFixed(0)+'″ (= seat slats)',
+    add('back-slat-'+(i+1),'Backrest slat '+(i+1),'2x4','2×4 · '+BACK_SLAT_W.toFixed(0)+'″ (nests between arms)',
         [BACK_SLAT_W, W4, TH], [0, cy, cz], -RCL);
   }
 }

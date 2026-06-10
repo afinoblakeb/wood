@@ -32,8 +32,15 @@ can learn from them. Newest at the bottom.
   **center seat rail EC** (angled 8.4° front on AC, square rear on the center post).
 - **Front beam J = 57″, canted 8.4°** to laminate flat on AC; bottom rails get
   matching 8.4° angled fronts. All seat on one 8.4° plane.
-- **Slats:** seat & back slats both full-width 57″ (unified look); one consistent
-  **⅜″ gap** for both.
+- **Slats:** one consistent **⅜″ gap** for seat and back. Seat slats full-width
+  (57″); **back slats nest between the arms (52″)** — see backrest brace below.
+- **Backrest post tops** trimmed flush with the top back slat (H = 35.1).
+- **Backrest brace (strength):** the backrest is held at the base (rear beam) and
+  the seat-back corner (4 bolts). To add a high third point on a leaned-into back
+  (the old bench failed at its attachment), the **armrests extend back and lap onto
+  the backrest posts** (front-leg → arm → backrest triangle). That requires the
+  back slats to nest between the arms (52″), so they're *not* full-width — a
+  deliberate trade of slat width for backrest stiffness.
 
 ## Materials & fasteners
 - **10 × 10-ft 2×4 + 1 × 8-ft 2×6 pine** (packs into 10 boards at ~7% waste).
