@@ -183,6 +183,21 @@
     <label class="chk" style="margin-top:6px"><input type="checkbox" id="dimchk" /> Show dimensions &amp; edge labels</label>
   </div>
 
+  <div class="group" style="margin-bottom:8px">
+    <div class="lbl">Planning tools</div>
+    <div class="modes">
+      <button id="btn-cutlist">📋 Cut list</button>
+      <button id="btn-measure">📏 Measure</button>
+    </div>
+    <div class="rowflex" style="margin-top:8px">
+      <span class="lbl" style="margin:0">Build step</span>
+      <span class="pct" id="step-val">complete</span>
+    </div>
+    <input type="range" id="stepslider" min="1" max="6" value="6" step="1" />
+    <div id="measure-out" style="display:none;font-size:.82em;color:var(--ink-soft);margin-top:6px"></div>
+    <div id="cutlist-out" style="display:none;max-height:240px;overflow:auto;margin-top:8px;font-size:.76em;line-height:1.5"></div>
+  </div>
+
   <div id="readout">
     <div class="ro-head">
       <span class="ro-key" id="ro-key">·</span>
@@ -197,7 +212,7 @@
 
   <div class="links">
     ← <a href="index.html">Original (flat‑ground) design</a> ·
-    📋 <a href="projects/2x4-garden-bench.html">Cut list →</a>
+    🔨 <a href="projects/build-day.html">Build-Day Guide →</a>
   </div>
 </div>
 
@@ -953,11 +968,98 @@ renderer.domElement.addEventListener('pointerup', e=>{
   raycaster.setFromCamera(pointer, camera);
   const hits = raycaster.intersectObjects(parts, false);
   if(hits.length){
+    if(measureMode){ measurePick(hits[0].object); return; }
     selected = hits[0].object.userData.partName;
     partsel.value = selected;
     updateAppearance(); updateReadout(); refreshDims();
   }
 });
+
+/* =====================================================================
+   PLANNING TOOLS — cut list · measure · build steps  (live from `parts`)
+   ===================================================================== */
+function partLen(def){
+  if(def.verts){
+    const mid=ix=>ix.reduce((a,i)=>[a[0]+def.verts[i][0],a[1]+def.verts[i][1],a[2]+def.verts[i][2]],[0,0,0]).map(s=>s/4);
+    const b=mid([0,1,2,3]), t=mid([4,5,6,7]);
+    return Math.hypot(t[0]-b[0],t[1]-b[1],t[2]-b[2]);
+  }
+  return Math.max(...def.size);
+}
+function buildCutList(){
+  const groups=new Map();
+  for(const m of parts){
+    const d=m.userData.def, len=partLen(d);
+    const base=d.name.replace(/-(left|right|center)$/,'').replace(/-\d+$/,'');
+    const key=base+'@'+len.toFixed(1);
+    const label=d.label.replace(/\s*\(.*?\)\s*$/,'').replace(/\s+\d+$/,'');
+    const g=groups.get(key)||{label,lumber:d.lumber,qty:0,len:0};
+    g.qty++; g.len=Math.max(g.len,len); groups.set(key,g);
+  }
+  let t24=0,t26=0,rows='';
+  for(const g of groups.values()){
+    g.lumber==='2x6'?(t26+=g.len*g.qty):(t24+=g.len*g.qty);
+    rows+=`<tr><td>${g.label}</td><td style="text-align:center">×${g.qty}</td><td>${g.lumber}</td><td style="text-align:right">${g.len.toFixed(1)}″</td></tr>`;
+  }
+  const c=re=>parts.filter(p=>re.test(p.userData.partName)).length;
+  const screws=8+8+4+4+c(/^backrest-/)*2+2+4+6+c(/^seat-slat/)*3;
+  return `<table style="width:100%;border-collapse:collapse">
+    <thead><tr style="text-align:left;border-bottom:1px solid var(--line)"><th>Part</th><th>Qty</th><th>Stock</th><th>Len</th></tr></thead>
+    <tbody>${rows}</tbody></table>
+    <div style="margin-top:6px;border-top:1px solid var(--line);padding-top:6px">
+      <b>${(t24/12).toFixed(1)} ft</b> 2×4 · <b>${(t26/12).toFixed(1)} ft</b> 2×6 → 10 × 10ft 2×4 + 1 × 8ft 2×6<br>
+      <span style="color:var(--ink-soft)">Hardware: ${screws} × 2½″ pocket screws · ${Math.round(c(/^back-slat/)*1.6)} straight back-slat screws · 4 carriage bolts · 4 tree lags</span>
+    </div>`;
+}
+const cutOut=document.getElementById('cutlist-out');
+document.getElementById('btn-cutlist').onclick=function(){
+  const open=cutOut.style.display==='none';
+  cutOut.style.display=open?'block':'none';
+  this.classList.toggle('active',open);
+  if(open) cutOut.innerHTML=buildCutList();
+};
+
+// Measure: tap two boards → centre-to-centre distance + W/H/D deltas
+let measureMode=false, measurePicks=[];
+const measOut=document.getElementById('measure-out');
+const _wpa=new THREE.Vector3(), _wpb=new THREE.Vector3();
+function measurePick(obj){
+  measurePicks.push(obj); setEmissive(obj,true);
+  if(measurePicks.length===2){
+    const a=measurePicks[0].getWorldPosition(_wpa).clone();
+    const b=measurePicks[1].getWorldPosition(_wpb).clone();
+    measOut.innerHTML=`<b>${measurePicks[0].userData.id} ↔ ${measurePicks[1].userData.id}</b>: `+
+      `${a.distanceTo(b).toFixed(1)}″ centre-to-centre<br>`+
+      `Δ ${Math.abs(a.x-b.x).toFixed(1)} wide · ${Math.abs(a.y-b.y).toFixed(1)} high · ${Math.abs(a.z-b.z).toFixed(1)} deep`;
+    setTimeout(()=>{ measurePicks.forEach(m=>setEmissive(m,false)); measurePicks=[]; },1400);
+  } else measOut.innerHTML='Now tap a second board…';
+}
+document.getElementById('btn-measure').onclick=function(){
+  measureMode=!measureMode;
+  this.classList.toggle('active',measureMode);
+  measOut.style.display=measureMode?'block':'none';
+  measurePicks.forEach(m=>setEmissive(m,false)); measurePicks=[];
+  measOut.innerHTML=measureMode?'Tap two boards to measure between them.':'';
+};
+
+// Build steps: reveal parts in assembly order (matches the build-day sequence)
+const STEP_LABELS=['','A-frame ends','+ centre spine','+ cross beams','+ backrest','+ seat slats','complete'];
+function stepOf(name){
+  if(/^leg-front-center|^seatrail-center/.test(name)) return 2;
+  if(/^leg-|^seatrail-|^bottomrail-/.test(name)) return 1;
+  if(/^beam-/.test(name)) return 3;
+  if(/^backrest-|^back-slat-/.test(name)) return 4;
+  if(/^seat-slat-/.test(name)) return 5;
+  if(/^armrest-/.test(name)) return 6;
+  return 1;
+}
+const stepSlider=document.getElementById('stepslider');
+stepSlider.oninput=()=>{
+  const n=+stepSlider.value;
+  document.getElementById('step-val').textContent=STEP_LABELS[n]||'complete';
+  for(const m of parts) m.visible = stepOf(m.userData.partName) <= n;
+  boltsGroup.visible = showBolts && n>=4;
+};
 
 /* =====================================================================
    RENDER LOOP
