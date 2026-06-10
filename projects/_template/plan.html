@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PROJECT NAME — Woodshop Plans</title>
+  <meta name="description" content="Build plan: cut list, fastener schedule, and step-by-step assembly." />
+  <link rel="stylesheet" href="../assets/css/style.css" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Ctext y='14' font-size='14'%3E%F0%9F%AA%9A%3C/text%3E%3C/svg%3E" />
+</head>
+<body>
+  <header class="site-header">
+    <div class="wrap">
+      <a class="brand" href="../plans.html"><span class="logo">🪚</span> Woodshop Plans</a>
+      <nav class="nav">
+        <a href="../plans.html">Projects</a>
+        <a href="../PROJECT.html">3D Model</a>
+        <a href="https://github.com/afinoblakeb/wood">GitHub</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="wrap plan">
+    <p class="crumb"><a href="../plans.html">← All projects</a> &nbsp;·&nbsp; <a href="../PROJECT.html">🪑 Interactive 3D model</a></p>
+    <span class="badge">Category</span>
+    <h1>PROJECT NAME</h1>
+    <p class="lead">One-paragraph description. Finished size, material, the idea.</p>
+
+    <div class="specs">
+      <div class="spec"><div class="num">—</div><div class="label">Width</div></div>
+      <div class="spec"><div class="num">—</div><div class="label">Depth</div></div>
+      <div class="spec"><div class="num">—</div><div class="label">Height</div></div>
+    </div>
+
+    <nav class="toc">
+      <strong>On this page</strong>
+      <ul>
+        <li><a href="#cutlist">Cut list</a></li>
+        <li><a href="#shopping">Lumber &amp; hardware</a></li>
+        <li><a href="#build">Assembly</a></li>
+        <li><a href="#finish">Finishing</a></li>
+      </ul>
+    </nav>
+
+    <h2 id="cutlist">Cut list</h2>
+    <p class="muted">Generate from the model: <code>node tools/cutlist.mjs PROJECT.html</code>. Paste the table here.</p>
+
+    <h2 id="shopping">Lumber &amp; hardware</h2>
+    <p class="muted"><code>node tools/pack.mjs PROJECT.html</code> and <code>node tools/hardware.mjs PROJECT.html</code>.</p>
+
+    <h2 id="build">Assembly</h2>
+    <ol class="steps">
+      <li>Step…</li>
+    </ol>
+
+    <h2 id="finish">Finishing</h2>
+    <ul>
+      <li>Sand, seal end grain, finish order…</li>
+    </ul>
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap"><p>🪚 Woodshop Plans — measure twice, cut once.</p></div>
+  </footer>
+</body>
+</html>

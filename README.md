@@ -28,16 +28,42 @@ https://afinoblakeb.github.io/wood/
 
 ```
 .
-├── index.html                       # Interactive 3D bench viewer (Three.js, self-contained)
+├── bench-site.html                  # Interactive 3D model — the active build (sloped/tree)
+├── index.html / bench-variant.html  # Legacy flat-ground model + 2×6 variant
 ├── plans.html                       # Project gallery / landing page
 ├── projects/
-│   └── 2x4-garden-bench.html        # Detailed written plan for the bench
-├── assets/
-│   ├── css/style.css                # Shared site theme (print-friendly)
-│   └── img/                         # Images (if any)
+│   ├── build-day.html               # Authoritative build-day guide (sloped install)
+│   ├── 2x4-garden-bench.html        # Original flat-ground written plan
+│   ├── bench-decisions.md           # Decision log (why each choice was made)
+│   └── _template/                   # Scaffold for starting a new project
+├── tools/                           # Model verification & generators (Node + Python)
+│   ├── lib.mjs · emit.mjs           # Extract part data from a model without a browser
+│   ├── cutlist.mjs · pack.mjs       # Cut list + lumber-buy, generated from the model
+│   ├── hardware.mjs                 # Fastener shopping list
+│   ├── interfere.py                 # Volumetric interference check (0 pairs required)
+│   └── verify.mjs                   # Syntax + interference gate (used by CI)
+├── .github/workflows/               # pages.yml (deploy, gated by verify) · verify.yml (PRs)
+├── assets/css/style.css             # Shared site theme (print-friendly)
+├── package.json                     # `npm run verify | cutlist | pack | hardware`
 ├── .nojekyll                        # Serve files as-is (no Jekyll processing)
 └── README.md
 ```
+
+## Tooling — the model is the single source of truth
+
+Cut lists, lumber buys, and hardware lists are **generated from the model**, never
+hand-copied (that's where drift bugs come from). With Node + Python 3:
+
+```
+npm run verify                 # syntax-check every model + 0-interference check
+node tools/cutlist.mjs  bench-site.html
+node tools/pack.mjs     bench-site.html      # boards-to-buy at 8/10/12/16 ft
+node tools/hardware.mjs bench-site.html
+```
+
+**CI** runs `verify` on every push/PR and **before each Pages deploy**, so a model
+with a syntax error or overlapping boards can't ship. The active build model is
+gated strictly; the legacy flat-ground pages are reported but not yet gated.
 
 ### The 3D viewer (`index.html`)
 
@@ -69,10 +95,15 @@ The `.nojekyll` file tells GitHub Pages to serve the files exactly as they are
 
 ## Adding a new plan
 
-1. Copy `projects/2x4-garden-bench.html` as a starting template.
-2. Update the drawings, cut list, supply list, and steps.
-3. Add a new `<article class="card">` to the gallery in `index.html`.
-4. Add a row to the Projects table above.
+Start from the scaffold in **`projects/_template/`** (see its `README.md`):
+
+1. Copy the closest model (`bench-site.html`) to `<project>.html` and edit the
+   parametric constants. Run `npm run verify` until it's interference-free.
+2. Copy `projects/_template/plan.html` to `projects/<project>.html`; fill the cut
+   list / lumber / hardware using `node tools/cutlist.mjs <project>.html` etc.
+3. Copy `projects/_template/decisions.md` to `projects/<project>-decisions.md` and
+   log choices as you go.
+4. Add a card to `plans.html` and a row to the Projects table above.
 
 ## License
 
